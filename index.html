@@ -93,7 +93,7 @@ async function load(){
     const active=(Number(acc.paidUntil)||0)>now||((Number(acc.trialStart)||0)&&Number(acc.trialStart)+30*864e5>now);
     if(!active){$('shopName').textContent=store.shopName||'متجر';$('state').innerHTML='هذا المتجر متوقف مؤقتاً.<br>تواصل مع المحل مباشرة.'+(store.whatsapp?'<br><br><a style="color:var(--primary)" href="https://wa.me/'+String(store.whatsapp).replace(/\D/g,'').replace(/^00/,'')+'">💬 مراسلة المحل على واتساب</a>':'');return;}}catch(_){}
   document.title=store.shopName+' — متجر';$('shopName').textContent=store.shopName||'متجر';
-  $('shopSub').textContent=[store.address,store.updatedAt?('آخر تحديث للأسعار: '+new Date(store.updatedAt).toLocaleDateString('ar-SY')):''].filter(Boolean).join(' · ');
+  $('shopSub').textContent=[store.address,store.updatedAt?('آخر تحديث للأسعار: '+new Date(store.updatedAt).toLocaleDateString('ar-SY-u-nu-latn')):''].filter(Boolean).join(' · ');
   const cats=[...new Set(store.products.map(p=>p.c).filter(Boolean))];
   $('cats').innerHTML=cats.length?['<button type="button" data-c="" aria-pressed="true">الكل</button>'].concat(cats.map(c=>`<button type="button" data-c="${esc(c)}" aria-pressed="false">${esc(c)}</button>`)).join(''):'';
   $('cats').onclick=e=>{const b=e.target.closest('button');if(!b)return;cat=b.dataset.c;[...$('cats').children].forEach(x=>x.setAttribute('aria-pressed',String(x===b)));render();};
