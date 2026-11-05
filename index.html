@@ -21,6 +21,7 @@
   --success: #10b981;
   --success-grad: linear-gradient(135deg, #10b981, #059669);
   --success-soft: rgba(16, 185, 129, 0.15);
+  --noon-yellow: #feee00;
   --gold: #f59e0b;
   --danger: #f43f5e;
   --danger-soft: rgba(244, 63, 94, 0.16);
@@ -146,6 +147,291 @@ body {
   transition: transform .15s;
 }
 .tool-btn:active { transform: scale(0.92); }
+
+/* ============================================================================
+   NOON-STYLE DYNAMIC HERO SHOWCASE (Between Top Header & Search Bar)
+   ============================================================================ */
+.noon-showcase {
+  padding: 12px 0 6px;
+  display: none;
+  overflow: hidden;
+}
+.noon-showcase.ready { display: block; }
+
+.showcase-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+.showcase-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text);
+}
+.noon-pill {
+  background: var(--noon-yellow);
+  color: #0f172a;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(254, 238, 0, 0.35);
+}
+.showcase-counter {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 12px;
+  direction: ltr;
+}
+
+/* Main Banner Stage */
+.hero-stage {
+  position: relative;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(16, 185, 129, 0.14), var(--card-solid));
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  min-height: 158px;
+  touch-action: pan-y;
+}
+html[data-theme="light"] .hero-stage {
+  background: linear-gradient(135deg, #e0f2fe, #ecfdf5, #ffffff);
+}
+
+.hero-progress {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--noon-yellow), var(--primary), var(--success));
+  width: 0%;
+  z-index: 5;
+  transition: width 0.1s linear;
+}
+
+.hero-track {
+  display: flex;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+.hero-slide {
+  min-width: 100%;
+  padding: 14px 14px 12px;
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  align-items: center;
+  gap: 14px;
+}
+@media (min-width: 640px) {
+  .hero-slide {
+    grid-template-columns: 160px 1fr;
+    padding: 18px 24px;
+    gap: 20px;
+  }
+}
+
+.hero-img-box {
+  width: 118px;
+  height: 118px;
+  border-radius: 16px;
+  background: var(--card-solid);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+@media (min-width: 640px) {
+  .hero-img-box { width: 155px; height: 155px; }
+}
+.hero-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.hero-slide.active-slide .hero-img-box img {
+  animation: heroZoom 3.5s ease-out forwards;
+}
+@keyframes heroZoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.07); }
+}
+
+.hero-disc-tag {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: linear-gradient(135deg, #f43f5e, #be123c);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 6px;
+  z-index: 2;
+}
+
+.hero-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.hero-badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.badge-new {
+  background: var(--noon-yellow);
+  color: #0f172a;
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+.badge-cat-hero {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+.hero-details h3 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 900;
+  line-height: 1.35;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  cursor: pointer;
+}
+@media (min-width: 640px) {
+  .hero-details h3 { font-size: 18px; }
+}
+.hero-prices {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 2px 0;
+}
+.hero-real-p {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--success);
+}
+.hero-old-p {
+  font-size: 11px;
+  color: var(--danger);
+  text-decoration: line-through;
+  font-weight: 700;
+}
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.hero-add-btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 7px 14px;
+  background: var(--primary-grad);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.hero-qv-btn {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 7px 10px;
+  background: var(--soft);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Multi-Image Auto-Sync Strip (Shows all 10 Newest Products Images at once) */
+.hero-thumbs {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  margin-top: 9px;
+  padding: 3px 2px 5px;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+.hero-thumbs::-webkit-scrollbar { display: none; }
+.thumb-card {
+  flex: 0 0 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  opacity: 0.65;
+}
+.thumb-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.thumb-card.active {
+  border-color: var(--noon-yellow);
+  transform: translateY(-3px) scale(1.06);
+  opacity: 1;
+  box-shadow: 0 4px 12px rgba(254, 238, 0, 0.35);
+}
+html[data-theme="light"] .thumb-card.active {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+.thumb-num {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 0 4px;
+  border-radius: 4px;
+}
 
 /* Sticky Search & Categories */
 .sticky-bar {
@@ -327,7 +613,6 @@ body {
 }
 .item:hover { border-color: var(--primary); }
 
-/* Image Container - Slightly smaller ratio (4:3.6) so 4-per-row cards look sleek and balanced */
 .ph {
   aspect-ratio: 1 / 0.88;
   background: var(--soft);
@@ -348,7 +633,6 @@ body {
   filter: contrast(1.04) saturate(1.06);
 }
 
-/* Discount Badge */
 .disc-badge {
   position: absolute;
   top: 4px;
@@ -483,7 +767,6 @@ body {
   color: var(--text);
 }
 
-/* Adjustments when user switches to 2-Col or Desktop or List Mode */
 @media (min-width: 768px) {
   .info { padding: 10px; }
   .info b { font-size: 14px; min-height: 36px; }
@@ -670,7 +953,7 @@ footer { text-align: center; color: var(--muted); font-size: 11px; padding: 24px
 <div class="toast" id="toast">تم التحديث</div>
 <div id="printMirror" aria-hidden="true"></div>
 
-<!-- Store Header -->
+<!-- 1. Top Store Header -->
 <header class="store-header">
   <div class="wrap">
     <div class="store-top">
@@ -690,7 +973,28 @@ footer { text-align: center; color: var(--muted); font-size: 11px; padding: 24px
   </div>
 </header>
 
-<!-- Sticky Search & Categories -->
+<!-- 2. Noon-Style Dynamic 10 Newest Products Showcase (Between Header & Search Bar) -->
+<section class="noon-showcase" id="noonShowcase" aria-label="أحدث المنتجات والعروض">
+  <div class="wrap">
+    <div class="showcase-head">
+      <div class="showcase-title">
+        <span class="noon-pill">🔥 عروض نون الحصرية</span>
+        <span>وصل حديثاً للمتجر</span>
+      </div>
+      <span class="showcase-counter" id="heroCounter">1 / 10</span>
+    </div>
+
+    <div class="hero-stage" id="heroStage">
+      <div class="hero-progress" id="heroProgress"></div>
+      <div class="hero-track" id="heroTrack"></div>
+    </div>
+
+    <!-- Auto-Synchronized Multi-Image Strip for the 10 Newest Products -->
+    <div class="hero-thumbs" id="heroThumbs"></div>
+  </div>
+</section>
+
+<!-- 3. Sticky Search & Categories Bar -->
 <div class="sticky-bar">
   <div class="wrap">
     <div class="search-row">
@@ -914,6 +1218,7 @@ const code = (new URLSearchParams(location.search).get('s') || location.hash.rep
 
 let store = null, cart = {}, favs = {}, cat = '', term = '', sortBy = 'default', onlyStock = false, onlyFavs = false, deliveryMode = 'delivery';
 let currentInvNo = '#' + Math.floor(100000 + Math.random() * 900000);
+let heroItems = [], heroIdx = 0, heroTimer = null, progressTimer = null, progressVal = 0;
 
 const CART_KEY = 'khz_cart_' + code;
 const FAV_KEY = 'khz_fav_' + code;
@@ -933,7 +1238,7 @@ function showToast(msg){
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-// Theme Handling (Default Dark Royal Glass)
+// Theme Handling
 const savedTheme = localStorage.getItem('khz_ui_theme') || 'dark';
 document.documentElement.setAttribute('data-theme', savedTheme);
 $('themeBtn').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
@@ -951,14 +1256,13 @@ const money = v => {
 const norm = s => String(s || '').toLowerCase().replace(/[\u064B-\u0652]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه');
 
 /* ============================================================================
-   1. TRUE IMAGE SUPER-RESOLUTION & UNSHARP MASK FILTER (Enhances compressed images)
+   1. TRUE IMAGE SUPER-RESOLUTION & UNSHARP MASK FILTER
    ============================================================================ */
 function enhanceImageHD(base64Str, callback) {
   if (!base64Str || !/^data:image\//.test(base64Str)) { callback(base64Str); return; }
   const img = new Image();
   img.onload = () => {
     try {
-      // Target optimal crisp resolution (420px min for small thumbnails)
       const targetSize = 440;
       let w = img.width || 200;
       let h = img.height || 200;
@@ -979,7 +1283,6 @@ function enhanceImageHD(base64Str, callback) {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, w, h);
 
-      // Apply 3x3 Unsharp Mask Convolution Kernel (Blend 32% for natural HD crispness)
       const imgData = ctx.getImageData(0, 0, w, h);
       const src = imgData.data;
       const out = new Uint8ClampedArray(src);
@@ -1008,6 +1311,167 @@ function enhanceImageHD(base64Str, callback) {
   };
   img.onerror = () => callback(base64Str);
   img.src = base64Str;
+}
+
+/* ============================================================================
+   2. NOON-STYLE 10 NEWEST PRODUCTS AUTO-ROTATING HERO SHOWCASE
+   ============================================================================ */
+function initNoonShowcase() {
+  if (!store || !Array.isArray(store.products) || !store.products.length) return;
+
+  // Pick the 10 newest products (from the end of store.products)
+  const reversedAll = [...store.products].reverse();
+  const withStock = reversedAll.filter(p => p.s !== 0);
+  heroItems = (withStock.length >= 10 ? withStock : reversedAll).slice(0, 10);
+
+  if (!heroItems.length) return;
+  $('noonShowcase').classList.add('ready');
+
+  renderHeroSlides();
+  goToHeroSlide(0);
+  startHeroAutoPlay();
+
+  // Priority preload HD images for the 10 newest products
+  heroItems.forEach(p => {
+    if (p.i && !(p.id in imgCache)) {
+      fetch(DB + '/stores_img/' + encodeURIComponent(code) + '/' + encodeURIComponent(p.id) + '.json')
+        .then(r => r.json())
+        .then(rawImg => {
+          enhanceImageHD(rawImg, enhanced => {
+            imgCache[p.id] = enhanced;
+            refreshHeroImages(p.id);
+            const gridEl = document.querySelector(`.ph[data-img="${CSS.escape(String(p.id))}"]`);
+            if (gridEl) updateElementImage(gridEl, enhanced);
+          });
+        }).catch(() => {});
+    }
+  });
+
+  // Touch Swipe Support for Mobile
+  let startX = 0;
+  const stage = $('heroStage');
+  stage.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    stopHeroAutoPlay();
+  }, {passive: true});
+
+  stage.addEventListener('touchend', e => {
+    const diff = e.changedTouches[0].clientX - startX;
+    // In RTL: swiping right/left
+    if (Math.abs(diff) > 35) {
+      if (diff > 0) goToHeroSlide((heroIdx + 1) % heroItems.length);
+      else goToHeroSlide((heroIdx - 1 + heroItems.length) % heroItems.length);
+    }
+    startHeroAutoPlay();
+  }, {passive: true});
+}
+
+function renderHeroSlides() {
+  $('heroTrack').innerHTML = heroItems.map((p, i) => {
+    const cached = imgCache[p.id];
+    const validImg = typeof cached === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(cached);
+    const realPrice = Number(p.p) || 0;
+    const fakePrice = Math.round(realPrice * 1.20);
+    const q = cart[p.id] || 0;
+
+    return `<div class="hero-slide ${i === heroIdx ? 'active-slide' : ''}" data-slide-idx="${i}">
+      <div class="hero-img-box" data-hero-img="${esc(p.id)}" data-qv="${esc(p.id)}">
+        <span class="hero-disc-tag">خصم 20%</span>
+        ${validImg ? `<img src="${cached}" alt="${esc(p.n)}">` : (p.i ? '<span class="skel" style="width:100%;height:100%"></span>' : '🛍️')}
+      </div>
+      <div class="hero-details">
+        <div class="hero-badges">
+          <span class="badge-new">✨ جديد #${i + 1}</span>
+          ${p.c ? `<span class="badge-cat-hero">${esc(p.c)}</span>` : ''}
+        </div>
+        <h3 data-qv="${esc(p.id)}">${esc(p.n)}</h3>
+        <div class="hero-prices">
+          <span class="hero-real-p">${esc(money(realPrice))}</span>
+          <span class="hero-old-p">${esc(money(fakePrice))}</span>
+        </div>
+        <div class="hero-actions">
+          <button type="button" class="hero-add-btn" data-inc="${esc(p.id)}">
+            ${q ? `🛒 بالسلة (${q}) ＋` : '＋ أضف للسلة'}
+          </button>
+          <button type="button" class="hero-qv-btn" data-qv="${esc(p.id)}">معاينة</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  $('heroThumbs').innerHTML = heroItems.map((p, i) => {
+    const cached = imgCache[p.id];
+    const validImg = typeof cached === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(cached);
+    return `<button type="button" class="thumb-card ${i === heroIdx ? 'active' : ''}" data-thumb-idx="${i}" data-thumb-img="${esc(p.id)}" aria-label="${esc(p.n)}">
+      ${validImg ? `<img src="${cached}" alt="">` : '🛍️'}
+      <span class="thumb-num">${i + 1}</span>
+    </button>`;
+  }).join('');
+
+  $('heroThumbs').onclick = e => {
+    const btn = e.target.closest('[data-thumb-idx]');
+    if (!btn) return;
+    stopHeroAutoPlay();
+    goToHeroSlide(Number(btn.dataset.thumbIdx));
+    startHeroAutoPlay();
+  };
+}
+
+function refreshHeroImages(id) {
+  const src = imgCache[id];
+  if (typeof src !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(src)) return;
+  document.querySelectorAll(`[data-hero-img="${CSS.escape(String(id))}"]`).forEach(box => {
+    const tag = box.querySelector('.hero-disc-tag');
+    box.innerHTML = '';
+    if (tag) box.appendChild(tag);
+    const im = new Image();
+    im.alt = '';
+    im.src = src;
+    box.appendChild(im);
+  });
+  document.querySelectorAll(`[data-thumb-img="${CSS.escape(String(id))}"]`).forEach(btn => {
+    const num = btn.querySelector('.thumb-num');
+    btn.innerHTML = `<img src="${src}" alt="">`;
+    if (num) btn.appendChild(num);
+  });
+}
+
+function goToHeroSlide(index) {
+  if (!heroItems.length) return;
+  heroIdx = index;
+  // In RTL flex container, positive translateX moves track to the right to reveal next items
+  $('heroTrack').style.transform = `translateX(${heroIdx * 100}%)`;
+  $('heroCounter').textContent = `${heroIdx + 1} / ${heroItems.length}`;
+
+  [...$('heroTrack').children].forEach((el, i) => el.classList.toggle('active-slide', i === heroIdx));
+  [...$('heroThumbs').children].forEach((el, i) => {
+    const active = i === heroIdx;
+    el.classList.toggle('active', active);
+    if (active) {
+      el.scrollIntoView({behavior: 'smooth', block: 'nearest', inline: 'center'});
+    }
+  });
+  progressVal = 0;
+  $('heroProgress').style.width = '0%';
+}
+
+function startHeroAutoPlay() {
+  stopHeroAutoPlay();
+  if (heroItems.length <= 1) return;
+  progressVal = 0;
+  progressTimer = setInterval(() => {
+    progressVal += 2.86; // ~3.5 seconds total
+    if (progressVal >= 100) {
+      goToHeroSlide((heroIdx + 1) % heroItems.length);
+    } else {
+      $('heroProgress').style.width = progressVal + '%';
+    }
+  }, 100);
+}
+
+function stopHeroAutoPlay() {
+  if (heroTimer) clearInterval(heroTimer);
+  if (progressTimer) clearInterval(progressTimer);
 }
 
 async function load(){
@@ -1055,6 +1519,8 @@ async function load(){
   Object.keys(cart).forEach(id => {
     if (!store.products.some(p => String(p.id) === id)) delete cart[id];
   });
+
+  initNoonShowcase();
   render();
   renderCartBar();
   updateFavBadge();
@@ -1098,7 +1564,6 @@ function buildCategories(){
 function render(){
   if (!store) return;
   const t = norm(term);
-  // Clone array so reverse/sort never mutates original store.products
   let items = [...store.products].filter(p =>
     (!cat || p.c === cat) &&
     (!t || norm(p.n).includes(t) || norm(p.c || '').includes(t) || norm(p.u || '').includes(t)) &&
@@ -1106,7 +1571,6 @@ function render(){
     (!onlyFavs || favs[p.id])
   );
 
-  // 2. NEWEST FIRST BY DEFAULT
   if (sortBy === 'default') {
     items.reverse();
   } else if (sortBy === 'price_asc') {
@@ -1128,7 +1592,6 @@ function render(){
     const cached = imgCache[p.id];
     const validImg = typeof cached === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(cached);
 
-    // 3. 20% STRIKETHROUGH FAKE DISCOUNT SYSTEM
     const realPrice = Number(p.p) || 0;
     const fakePrice = Math.round(realPrice * 1.20);
 
@@ -1181,6 +1644,7 @@ async function loadImg(el){
       enhanceImageHD(rawImg, enhanced => {
         imgCache[id] = enhanced;
         updateElementImage(el, enhanced);
+        refreshHeroImages(id);
       });
       return;
     }
@@ -1282,6 +1746,8 @@ document.addEventListener('click', e => {
     saveCart();
     if (wasZero) showToast('تمت الإضافة إلى السلة ✓');
     render();
+    renderHeroSlides();
+    goToHeroSlide(heroIdx);
     renderCartBar();
     renderLines();
     if ($('qvSheet').classList.contains('on')) openQuickView(id);
@@ -1293,6 +1759,8 @@ document.addEventListener('click', e => {
     if (!cart[id]) delete cart[id];
     saveCart();
     render();
+    renderHeroSlides();
+    goToHeroSlide(heroIdx);
     renderCartBar();
     renderLines();
     if ($('qvSheet').classList.contains('on')) openQuickView(id);
@@ -1400,6 +1868,8 @@ $('clearCartBtn').onclick = () => {
   saveCart();
   currentInvNo = '#' + Math.floor(100000 + Math.random() * 900000);
   render();
+  renderHeroSlides();
+  goToHeroSlide(heroIdx);
   renderCartBar();
   renderLines();
   showToast('تم تفريغ السلة');
@@ -1460,7 +1930,7 @@ $('shareStoreBtn').onclick = () => {
 $('onlyStock').onchange = e => { onlyStock = e.target.checked; render(); };
 $('sortSelect').onchange = e => { sortBy = e.target.value; render(); };
 
-// Grid Mode Switchers (4-Col Default, 2-Col, List)
+// Grid Mode Switchers
 $('grid4Btn').onclick = () => {
   $('list').classList.remove('two-col', 'list-mode');
   $('grid4Btn').classList.add('active');
@@ -1483,7 +1953,7 @@ $('listBtn').onclick = () => {
 };
 
 /* ============================================================================
-   4. OFFICIAL INVOICE DOCUMENT GENERATOR (HTML + HIGH-RES CANVAS FILE EXPORT)
+   3. OFFICIAL INVOICE DOCUMENT GENERATOR (HTML + HIGH-RES CANVAS FILE EXPORT)
    ============================================================================ */
 function saveCustomerLocal(){
   const name = $('cName').value.trim(), phone = $('cPhone').value.trim(), addr = $('cAddr').value.trim();
@@ -1551,7 +2021,6 @@ function populateInvoice(){
   return true;
 }
 
-// Generates a real High-Resolution Official Invoice Image/Document Blob for instant download & WhatsApp attachment
 function generateOfficialInvoiceFile(callback) {
   const it = cartItems();
   const name = $('cName').value.trim() || 'عميل محترم';
@@ -1571,18 +2040,15 @@ function generateOfficialInvoiceFile(callback) {
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // Paper Background
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, W, H);
 
-  // Top Royal Gradient Bar
   const grad = ctx.createLinearGradient(0, 0, W, 0);
   grad.addColorStop(0, '#0ea5e9');
   grad.addColorStop(1, '#059669');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, 12);
 
-  // Header Texts
   ctx.direction = 'rtl';
   ctx.textAlign = 'right';
   ctx.fillStyle = '#0f172a';
@@ -1594,7 +2060,6 @@ function generateOfficialInvoiceFile(callback) {
   if (store.address) ctx.fillText('📍 ' + store.address, W - 35, 85);
   if (store.whatsapp) ctx.fillText('📞 ' + store.whatsapp, W - 35, 110);
 
-  // Invoice Badge Box (Left)
   ctx.fillStyle = '#eff6ff';
   ctx.fillRect(35, 30, 190, 75);
   ctx.strokeStyle = '#93c5fd';
@@ -1608,7 +2073,6 @@ function generateOfficialInvoiceFile(callback) {
   ctx.font = 'bold 22px "Segoe UI", Tahoma, sans-serif';
   ctx.fillText(currentInvNo, 130, 90);
 
-  // Customer Info Box
   ctx.fillStyle = '#f8fafc';
   ctx.fillRect(35, 125, W - 70, 95);
   ctx.strokeStyle = '#cbd5e1';
@@ -1627,7 +2091,6 @@ function generateOfficialInvoiceFile(callback) {
   ctx.font = '15px "Segoe UI", Tahoma, sans-serif';
   ctx.fillText('التاريخ: ' + nowStr, 50, 155);
 
-  // Table Header
   let y = 240;
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(35, y, W - 70, 38);
@@ -1666,7 +2129,6 @@ function generateOfficialInvoiceFile(callback) {
     y += rowH;
   });
 
-  // Note Box if present
   if (note) {
     y += 12;
     ctx.fillStyle = '#fffbeb';
@@ -1678,7 +2140,6 @@ function generateOfficialInvoiceFile(callback) {
     y += 45;
   }
 
-  // Grand Total Box
   y += 15;
   const grandTotal = it.reduce((a, x) => a + x.q * x.p.p, 0);
   ctx.fillStyle = '#f0fdf4';
@@ -1693,7 +2154,6 @@ function generateOfficialInvoiceFile(callback) {
   ctx.textAlign = 'left';
   ctx.fillText(money(grandTotal), 55, y + 38);
 
-  // Footer & Official Stamp
   y += 88;
   ctx.textAlign = 'center';
   ctx.fillStyle = '#64748b';
@@ -1722,7 +2182,6 @@ $('doPrintBtn').onclick = () => {
   window.print();
 };
 
-// Direct Document Generation + Auto Download + WhatsApp Dispatch
 async function sendOrderToWhatsApp(){
   const it = cartItems();
   if (!it.length) return;
@@ -1739,7 +2198,6 @@ async function sendOrderToWhatsApp(){
   generateOfficialInvoiceFile(async (blob, dataUrl) => {
     const fileName = `فاتورة_${(store.shopName || 'متجر').replace(/\s+/g,'_')}_${currentInvNo.replace('#','')}.png`;
 
-    // 1. Auto-download the official visual Invoice Document to customer's device
     try {
       const a = document.createElement('a');
       a.href = dataUrl;
@@ -1766,7 +2224,6 @@ async function sendOrderToWhatsApp(){
       ($('cNote').value.trim() ? `📝 *ملاحظات:* ${$('cNote').value.trim()}\n` : '') +
       `📎 *(تم حفظ نسخة مستند الفاتورة الرسمي في جهازك)*`;
 
-    // 2. If user clicked from inside the Invoice Modal and device supports native File Share, share the actual file!
     if (blob && navigator.canShare) {
       const file = new File([blob], fileName, { type: 'image/png' });
       if (navigator.canShare({ files: [file] }) && $('invoiceSheet').classList.contains('on')) {
@@ -1777,7 +2234,6 @@ async function sendOrderToWhatsApp(){
       }
     }
 
-    // 3. Open direct WhatsApp chat with the store number
     const wa = String(store.whatsapp || '').replace(/\D/g,'').replace(/^00/,'');
     window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(text), '_blank');
   });
