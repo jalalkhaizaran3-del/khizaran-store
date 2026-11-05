@@ -137,17 +137,8 @@ body {
   padding: 10px 0;
   box-shadow: var(--shadow-sm);
 }
-.search-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.search-box {
-  position: relative;
-  flex: 1;
-  display: flex;
-  align-items: center;
-}
+.search-row { display: flex; gap: 8px; align-items: center; }
+.search-box { position: relative; flex: 1; display: flex; align-items: center; }
 .search {
   width: 100%;
   padding: 11px 38px 11px 70px;
@@ -411,7 +402,9 @@ body {
   margin: 2px 0 6px;
 }
 .grid.list-mode .price-wrap { margin: 2px 0 0; }
+.price-box { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
 .price { font-weight: 900; color: var(--success); font-size: 15px; }
+.old-price { font-size: 12px; color: var(--muted); text-decoration: line-through; font-weight: 700; }
 .out {
   color: var(--danger);
   background: var(--danger-soft);
@@ -721,12 +714,12 @@ body {
 }
 .print-trigger-btn {
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid var(--primary);
   border-radius: 14px;
   padding: 12px;
   margin-top: 8px;
-  background: var(--soft);
-  color: var(--text);
+  background: var(--primary-soft);
+  color: var(--primary);
   font-weight: 800;
   font-size: 14px;
   font-family: inherit;
@@ -795,105 +788,195 @@ body {
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
-/* Official & Thermal Printable Invoice Modal */
-.invoice-wrap {
-  background: #fff;
-  color: #111;
+/* Official Luxury Invoice Card */
+.invoice-card {
+  background: #ffffff;
+  color: #0f172a;
   padding: 22px 18px;
   border-radius: 16px;
-  border: 1px solid #ddd;
+  border: 1px solid #cbd5e1;
   font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-  margin: 10px 0;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+  margin: 6px 0 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  position: relative;
+  overflow: hidden;
 }
-.inv-header {
+.invoice-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #2563eb, #059669);
+}
+.inv-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 2px dashed #cbd5e1;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+}
+.inv-brand h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  color: #0f172a;
+}
+.inv-brand p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #475569;
+}
+.inv-badge {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  padding: 6px 10px;
+  border-radius: 10px;
   text-align: center;
-  border-bottom: 2px dashed #bbb;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
 }
-.inv-header h3 { margin: 0; font-size: 20px; font-weight: 900; }
-.inv-header p { margin: 4px 0 0; font-size: 12px; color: #555; }
+.inv-badge span {
+  display: block;
+  font-size: 14px;
+  font-weight: 900;
+  margin-top: 2px;
+  direction: ltr;
+}
 .inv-meta-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   font-size: 12px;
-  gap: 6px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
 }
-.inv-meta-grid div strong { color: #222; }
+.inv-meta-grid div { color: #475569; }
+.inv-meta-grid div strong { color: #0f172a; }
+
 .inv-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 12px 0;
+  margin: 10px 0;
   font-size: 13px;
 }
 .inv-table th {
-  background: #f4f4f4;
-  color: #111;
+  background: #0f172a;
+  color: #ffffff;
   font-weight: 800;
-  padding: 8px 6px;
+  padding: 9px 8px;
   text-align: right;
-  border-bottom: 1px solid #ccc;
+  font-size: 12px;
 }
+.inv-table th:first-child { border-radius: 0 8px 8px 0; }
+.inv-table th:last-child { border-radius: 8px 0 0 8px; }
 .inv-table td {
-  padding: 8px 6px;
-  border-bottom: 1px dashed #e5e5e5;
+  padding: 9px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #1e293b;
 }
-.inv-table .num { text-align: left; direction: ltr; }
+.inv-table tr:nth-child(even) td { background: #f8fafc; }
+.inv-table .num { text-align: left; direction: ltr; font-weight: 700; }
+
 .inv-summary {
-  margin-top: 10px;
-  border-top: 2px solid #222;
-  padding-top: 8px;
-  font-size: 14px;
+  margin-top: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 10px 14px;
 }
 .inv-summary-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #166534;
   margin-bottom: 4px;
 }
 .inv-summary-row.grand {
   font-size: 18px;
   font-weight: 900;
   color: #059669;
-  border-top: 1px solid #ddd;
+  border-top: 1px dashed #86efac;
   padding-top: 6px;
   margin-top: 6px;
+  margin-bottom: 0;
+}
+.inv-note-box {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #92400e;
+  display: none;
 }
 .inv-footer {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin-top: 16px;
-  padding-top: 10px;
-  border-top: 2px dashed #bbb;
+  padding-top: 12px;
+  border-top: 2px dashed #cbd5e1;
   font-size: 11px;
-  color: #666;
+  color: #64748b;
+}
+.inv-stamp {
+  border: 2px solid #059669;
+  color: #059669;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 900;
+  font-size: 11px;
+  transform: rotate(-4deg);
+  text-align: center;
+  flex-shrink: 0;
 }
 .inv-barcode {
-  letter-spacing: 4px;
+  letter-spacing: 3px;
   font-weight: 900;
-  font-size: 14px;
+  font-size: 12px;
   margin-top: 4px;
-  color: #333;
+  color: #334155;
 }
 
-/* Print Rules - Isolates and Perfects Invoice Printing */
+/* Dedicated Print Mirror Container */
+#printMirror { display: none; }
+
 @media print {
-  body * { visibility: hidden; }
-  #invoicePrintArea, #invoicePrintArea * { visibility: visible; }
-  #invoicePrintArea {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100% !important;
-    max-width: 80mm !important; /* Optimized for POS and A4 */
-    margin: 0 auto;
-    padding: 0;
-    border: none;
-    box-shadow: none;
+  @page { margin: 10mm; }
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
-  .no-print { display: none !important; }
+  body > *:not(#printMirror) {
+    display: none !important;
+  }
+  #printMirror {
+    display: block !important;
+    width: 100% !important;
+    max-width: 720px !important;
+    margin: 0 auto !important;
+  }
+  #printMirror .invoice-card {
+    box-shadow: none !important;
+    border: 1px solid #94a3b8 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
 
 .msg {
@@ -925,6 +1008,8 @@ footer {
 <body>
 
 <div class="toast" id="toast">تم التحديث</div>
+
+<div id="printMirror" aria-hidden="true"></div>
 
 <!-- Store Header -->
 <header class="store-header">
@@ -1073,7 +1158,7 @@ footer {
     <textarea id="cNote" rows="2" placeholder="أي ملاحظة تود إبلاغ المحل بها..."></textarea>
 
     <button type="button" class="send" id="send">📲 إرسال الطلب عبر واتساب</button>
-    <button type="button" class="print-trigger-btn" id="previewInvoiceBtn">🧾 معاينة وطباعة الفاتورة الرسمية</button>
+    <button type="button" class="print-trigger-btn" id="previewInvoiceBtn">🧾 معاينة وطباعة فاتورة رسمية</button>
     <button type="button" class="ghost" id="continueShopBtn">متابعة التسوق</button>
   </div>
 </div>
@@ -1081,57 +1166,78 @@ footer {
 <!-- Printable Invoice Modal -->
 <div class="sheet" id="invoiceSheet" role="dialog" aria-modal="true">
   <div class="panel">
-    <div class="drag-pill no-print"></div>
-    <div class="panel-header no-print">
-      <h2>🧾 فاتورة الطلب الرسمية</h2>
+    <div class="drag-pill"></div>
+    <div class="panel-header">
+      <h2>🧾 فاتورة طلب إلكترونية</h2>
       <button type="button" class="close-btn" id="closeInvoice">✕</button>
     </div>
 
-    <!-- Official Printable Paper Area -->
-    <div class="invoice-wrap" id="invoicePrintArea">
-      <div class="inv-header">
-        <h3 id="invShopName">متجر</h3>
-        <p id="invShopAddr"></p>
-        <p id="invShopPhone"></p>
-      </div>
-      <div class="inv-meta-grid">
-        <div><strong>رقم الفاتورة:</strong> <span id="invNumber"></span></div>
-        <div><strong>التاريخ:</strong> <span id="invDate"></span></div>
-        <div><strong>العميل:</strong> <span id="invCustName"></span></div>
-        <div><strong>الهاتف:</strong> <span id="invCustPhone" dir="ltr"></span></div>
-        <div style="grid-column: span 2"><strong>طريقة الاستلام:</strong> <span id="invDelivery"></span></div>
-        <div style="grid-column: span 2" id="invAddrRow"><strong>العنوان:</strong> <span id="invCustAddr"></span></div>
-      </div>
-
-      <table class="inv-table">
-        <thead>
-          <tr>
-            <th>الصنف</th>
-            <th style="text-align:center">الكمية</th>
-            <th class="num">السعر</th>
-            <th class="num">المجموع</th>
-          </tr>
-        </thead>
-        <tbody id="invTableBody"></tbody>
-      </table>
-
-      <div class="inv-summary">
-        <div class="inv-summary-row grand">
-          <span>المجموع المستحق</span>
-          <span id="invGrandTotal" class="num"></span>
+    <!-- Official Printable Card -->
+    <div id="invoiceSourceWrap">
+      <div class="invoice-card">
+        <div class="inv-top-row">
+          <div class="inv-brand">
+            <h3 id="invShopName">متجر</h3>
+            <p id="invShopAddr"></p>
+            <p id="invShopPhone"></p>
+          </div>
+          <div class="inv-badge">
+            فاتورة طلب
+            <span id="invNumber">#000000</span>
+          </div>
         </div>
-      </div>
 
-      <div class="inv-footer">
-        <p>شكراً لتعاملكم معنا ونسعد بخدمتكم دائماً!</p>
-        <div class="inv-barcode" id="invBarcode">||| | ||||| || |||| |||</div>
-        <small>فاتورة مبيعات إلكترونية معتمدة بتطبيق الخيزران للمحاسبة</small>
+        <div class="inv-meta-grid">
+          <div><strong>التاريخ:</strong> <span id="invDate"></span></div>
+          <div><strong>طريقة الاستلام:</strong> <span id="invDelivery"></span></div>
+          <div><strong>اسم العميل:</strong> <span id="invCustName"></span></div>
+          <div><strong>رقم الهاتف:</strong> <span id="invCustPhone" dir="ltr"></span></div>
+          <div style="grid-column: span 2" id="invAddrRow"><strong>العنوان:</strong> <span id="invCustAddr"></span></div>
+        </div>
+
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الصنف</th>
+              <th style="text-align:center">الكمية</th>
+              <th class="num">السعر</th>
+              <th class="num">الإجمالي</th>
+            </tr>
+          </thead>
+          <tbody id="invTableBody"></tbody>
+        </table>
+
+        <div class="inv-summary">
+          <div class="inv-summary-row">
+            <span>إجمالي عدد الأصناف والقطع</span>
+            <strong id="invTotalQty">0</strong>
+          </div>
+          <div class="inv-summary-row grand">
+            <span>المجموع النهائي المستحق</span>
+            <span id="invGrandTotal" class="num"></span>
+          </div>
+        </div>
+
+        <div class="inv-note-box" id="invNoteBox"></div>
+
+        <div class="inv-footer">
+          <div>
+            <strong>شكراً لثقتكم وتعاملكم معنا!</strong>
+            <div class="inv-barcode" id="invBarcode">||| |||| ||||| |||| |||</div>
+            <div>مُصدرة إلكترونياً عبر نظام الخيزران للمحاسبة</div>
+          </div>
+          <div class="inv-stamp">
+            ✓ فاتورة موثقة<br>
+            <small id="invStampShop"></small>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Action Buttons inside Invoice Sheet -->
-    <button type="button" class="send no-print" id="doPrintBtn" style="background:#0284c7">🖨️ طباعة الفاتورة أو حفظها PDF</button>
-    <button type="button" class="ghost no-print" id="backToCartBtn">الرجوع للسلة</button>
+    <button type="button" class="send" id="doPrintBtn" style="background:var(--primary)">🖨️ طباعة الفاتورة / حفظ كملف PDF</button>
+    <button type="button" class="send" id="sendFromInvBtn" style="margin-top:8px">📲 إرسال الفاتورة عبر واتساب</button>
+    <button type="button" class="ghost" id="backToCartBtn">الرجوع لتعديل السلة</button>
   </div>
 </div>
 
@@ -1140,10 +1246,12 @@ footer {
 'use strict';
 const DB = 'https://jalal-khaizaran-default-rtdb.firebaseio.com';
 const $ = id => document.getElementById(id);
-const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;n'}[c]));
 const code = (new URLSearchParams(location.search).get('s') || location.hash.replace('#','') || '').replace(/[^A-Za-z0-9]/g,'').slice(0,16);
 
 let store = null, cart = {}, favs = {}, cat = '', term = '', sortBy = 'default', onlyStock = false, onlyFavs = false, deliveryMode = 'delivery';
+let currentInvNo = '#' + Math.floor(100000 + Math.random() * 900000);
+
 const CART_KEY = 'khz_cart_' + code;
 const FAV_KEY = 'khz_fav_' + code;
 
@@ -1274,9 +1382,16 @@ function render(){
     (!onlyFavs || favs[p.id])
   );
 
-  if (sortBy === 'price_asc') items.sort((a, b) => (Number(a.p) || 0) - (Number(b.p) || 0));
-  else if (sortBy === 'price_desc') items.sort((a, b) => (Number(b.p) || 0) - (Number(a.p) || 0));
-  else if (sortBy === 'name_asc') items.sort((a, b) => String(a.n || '').localeCompare(String(b.n || ''), 'ar'));
+  // Default: Newest first (reverse array order assuming later items in array are newly added)
+  if (sortBy === 'default') {
+    items.reverse();
+  } else if (sortBy === 'price_asc') {
+    items.sort((a, b) => (Number(a.p) || 0) - (Number(b.p) || 0));
+  } else if (sortBy === 'price_desc') {
+    items.sort((a, b) => (Number(b.p) || 0) - (Number(a.p) || 0));
+  } else if (sortBy === 'name_asc') {
+    items.sort((a, b) => String(a.n || '').localeCompare(String(b.n || ''), 'ar'));
+  }
 
   $('resultsInfo').textContent = onlyFavs ? `❤️ المفضلة (${items.length})` : (cat ? `${cat} (${items.length})` : `المنتجات (${items.length})`);
   $('state').style.display = items.length ? 'none' : 'block';
@@ -1289,6 +1404,10 @@ function render(){
     const cached = imgCache[p.id];
     const validImg = typeof cached === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(cached);
 
+    // 20% Mock Higher Price for strike-through effect
+    const realPrice = Number(p.p) || 0;
+    const fakePrice = Math.round(realPrice * 1.20);
+
     return `<article class="item">
       <div class="ph" data-img="${esc(p.id)}" data-qv="${esc(p.id)}">
         <button type="button" class="fav-btn" data-fav="${esc(p.id)}" aria-label="المفضلة">${isFav ? '❤️' : '🤍'}</button>
@@ -1299,7 +1418,10 @@ function render(){
         <b data-qv="${esc(p.id)}">${esc(p.n)}</b>
         ${p.u ? `<small>${esc(p.u)}</small>` : ''}
         <div class="price-wrap">
-          <div class="price">${esc(money(p.p))}</div>
+          <div class="price-box">
+            <div class="price">${esc(money(realPrice))}</div>
+            <div class="old-price">${esc(money(fakePrice))}</div>
+          </div>
           ${out ? '<div class="out">نفد</div>' : ''}
         </div>
       </div>
@@ -1369,6 +1491,8 @@ function openQuickView(id){
   const out = p.s === 0;
   const src = imgCache[p.id];
   const hasImg = typeof src === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(src);
+  const realPrice = Number(p.p) || 0;
+  const fakePrice = Math.round(realPrice * 1.20);
 
   $('qvPanel').innerHTML = `
     <div class="drag-pill"></div>
@@ -1385,9 +1509,12 @@ function openQuickView(id){
     ${p.c ? `<small style="color:var(--primary);font-weight:700">${esc(p.c)}</small>` : ''}
     <h3 style="margin:4px 0 6px;font-size:18px">${esc(p.n)}</h3>
     ${p.u ? `<p style="color:var(--muted);margin:0 0 12px;font-size:14px">${esc(p.u)}</p>` : ''}
-    <div class="total" style="margin:10px 0">
+    <div class="total" style="margin:10px 0;display:flex;justify-content:space-between;align-items:center">
       <span>السعر</span>
-      <span>${esc(money(p.p))}</span>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span>${esc(money(realPrice))}</span>
+        <span style="font-size:13px;text-decoration:line-through;color:var(--muted);font-weight:700">${esc(money(fakePrice))}</span>
+      </div>
     </div>
     ${q ? `<div class="qty"><button type="button" data-dec="${esc(p.id)}">−</button><span>${q}</span><button type="button" data-inc="${esc(p.id)}">＋</button></div>` : `<button type="button" class="add" style="padding:13px" data-inc="${esc(p.id)}" ${out ? 'disabled' : ''}>${out ? 'غير متوفر حالياً' : '＋ أضف إلى السلة'}</button>`}
   `;
@@ -1540,6 +1667,7 @@ $('clearCartBtn').onclick = () => {
   if (!Object.keys(cart).length) return;
   cart = {};
   saveCart();
+  currentInvNo = '#' + Math.floor(100000 + Math.random() * 900000);
   render();
   renderCartBar();
   renderLines();
@@ -1612,23 +1740,34 @@ $('listBtn').onclick = () => {
 };
 
 /* --- Official Invoice Generator & Print Logic --- */
+function saveCustomerLocal(){
+  const name = $('cName').value.trim(), phone = $('cPhone').value.trim(), addr = $('cAddr').value.trim();
+  if (name || phone || addr) {
+    try { localStorage.setItem('khz_customer', JSON.stringify({cName: name, cPhone: phone, cAddr: addr})); } catch(_) {}
+  }
+}
+
 function populateInvoice(){
   const it = cartItems();
   if (!it.length) { alert('السلة فارغة!'); return false; }
+  saveCustomerLocal();
+
   const name = $('cName').value.trim() || 'عميل محترم';
   const phone = $('cPhone').value.trim() || '—';
   const addr = $('cAddr').value.trim() || '—';
+  const note = $('cNote').value.trim();
 
   $('invShopName').textContent = store.shopName || 'متجر';
-  $('invShopAddr').textContent = store.address ? 'العنوان: ' + store.address : '';
-  $('invShopPhone').textContent = store.whatsapp ? 'هاتف المحل: ' + store.whatsapp : '';
+  $('invStampShop').textContent = store.shopName || 'المتجر';
+  $('invShopAddr').textContent = store.address ? '📍 ' + store.address : '';
+  $('invShopPhone').textContent = store.whatsapp ? '📞 ' + store.whatsapp : '';
 
   const now = new Date();
-  $('invNumber').textContent = '#' + Math.floor(100000 + Math.random() * 900000);
-  $('invDate').textContent = now.toLocaleDateString('ar-SY-u-nu-latn') + ' ' + now.toLocaleTimeString('ar-SY-u-nu-latn', {hour:'2-digit', minute:'2-digit'});
+  $('invNumber').textContent = currentInvNo;
+  $('invDate').textContent = now.toLocaleDateString('ar-SY-u-nu-latn') + ' — ' + now.toLocaleTimeString('ar-SY-u-nu-latn', {hour:'2-digit', minute:'2-digit'});
   $('invCustName').textContent = name;
   $('invCustPhone').textContent = phone;
-  $('invDelivery').textContent = deliveryMode === 'pickup' ? 'استلام مباشر من المحل' : 'خدمة توصيل للعنوان';
+  $('invDelivery').textContent = deliveryMode === 'pickup' ? '🏪 استلام من المحل' : '🚚 توصيل للعنوان';
 
   if (deliveryMode === 'delivery' && addr !== '—') {
     $('invAddrRow').style.display = 'block';
@@ -1637,17 +1776,29 @@ function populateInvoice(){
     $('invAddrRow').style.display = 'none';
   }
 
-  $('invTableBody').innerHTML = it.map(x => `
+  $('invTableBody').innerHTML = it.map((x, idx) => `
     <tr>
-      <td><b>${esc(x.p.n)}</b></td>
-      <td style="text-align:center">${x.q}</td>
+      <td>${idx + 1}</td>
+      <td><b>${esc(x.p.n)}</b>${x.p.u ? `<br><small style="color:#64748b">${esc(x.p.u)}</small>` : ''}</td>
+      <td style="text-align:center;font-weight:800">${x.q}</td>
       <td class="num">${esc(money(x.p.p))}</td>
       <td class="num">${esc(money(x.q * x.p.p))}</td>
     </tr>
   `).join('');
 
+  const totalQty = it.reduce((a, x) => a + x.q, 0);
+  $('invTotalQty').textContent = `${it.length} صنف (${totalQty} قطعة)`;
   $('invGrandTotal').textContent = money(it.reduce((a, x) => a + x.q * x.p.p, 0));
-  $('invBarcode').textContent = '||| ' + code.toUpperCase() + ' ' + Date.now().toString().slice(-4) + ' |||';
+
+  if (note) {
+    $('invNoteBox').style.display = 'block';
+    $('invNoteBox').innerHTML = `<strong>📝 ملاحظات الطلب:</strong> ${esc(note)}`;
+  } else {
+    $('invNoteBox').style.display = 'none';
+  }
+
+  $('invBarcode').textContent = '||| ' + code.toUpperCase() + ' ' + currentInvNo.replace('#','') + ' |||';
+  $('printMirror').innerHTML = $('invoiceSourceWrap').innerHTML;
   return true;
 }
 
@@ -1666,29 +1817,45 @@ $('backToCartBtn').onclick = () => {
 $('invoiceSheet').onclick = e => { if (e.target === $('invoiceSheet')) $('invoiceSheet').classList.remove('on'); };
 
 $('doPrintBtn').onclick = () => {
+  $('printMirror').innerHTML = $('invoiceSourceWrap').innerHTML;
   window.print();
 };
 
-// WhatsApp Direct Send
-$('send').onclick = () => {
+// Organized WhatsApp Receipt Sender
+function sendOrderToWhatsApp(){
   const it = cartItems();
   if (!it.length) return;
   const name = $('cName').value.trim(), phone = $('cPhone').value.trim(), addr = $('cAddr').value.trim();
-  if (!name || !phone) { alert('اكتب اسمك ورقم هاتفك حتى يتواصل معك المحل.'); return; }
-  try { localStorage.setItem('khz_customer', JSON.stringify({cName: name, cPhone: phone, cAddr: addr})); } catch(_) {}
-  const lines = it.map((x, idx) => `${idx + 1}. ${x.p.n} × ${x.q} = ${money(x.q * x.p.p)}`);
-  const receiveType = deliveryMode === 'pickup' ? '🏪 استلام من المحل' : ('🚚 توصيل للعنوان' + (addr ? ': ' + addr : ''));
-  const text = '🛒 *فاتورة طلب جديد من متجر ' + store.shopName + '*\n\n' +
-    lines.join('\n') +
-    '\n\n💰 *المجموع:* ' + money(it.reduce((a, x) => a + x.q * x.p.p, 0)) +
-    '\n📦 *طريقة الاستلام:* ' + receiveType +
-    '\n👤 *الاسم:* ' + name +
-    '\n📞 *الهاتف:* ' + phone +
-    ($('cNote').value.trim() ? '\n📝 *ملاحظات:* ' + $('cNote').value.trim() : '') +
-    '\n\n_تم إصدار الطلب إلكترونياً عبر تطبيق الخيزران للمحاسبة_';
+  if (!name || !phone) {
+    $('invoiceSheet').classList.remove('on');
+    $('sheet').classList.add('on');
+    alert('اكتب اسمك ورقم هاتفك حتى يتواصل معك المحل.');
+    return;
+  }
+  saveCustomerLocal();
+  const lines = it.map((x, idx) => `▫️ *${x.p.n}* (×${x.q}) — ${money(x.q * x.p.p)}`);
+  const receiveType = deliveryMode === 'pickup' ? '🏪 استلام مباشر من المحل' : ('🚚 توصيل للعنوان' + (addr ? ' (' + addr + ')' : ''));
+  
+  const text = `🧾 *إيصال طلب رسمي ومعتمد* (${currentInvNo})\n` +
+    `━━━━━━━━━━━━━━━\n` +
+    `👤 *العميل:* ${name}\n` +
+    `📞 *الهاتف:* ${phone}\n` +
+    `📦 *الاستلام:* ${receiveType}\n` +
+    `🕒 *الوقت:* ${new Date().toLocaleString('ar-SY-u-nu-latn')}\n` +
+    `━━━━━━━━━━━━━━━\n` +
+    `🛒 *تفاصيل الأصناف:\n` + lines.join('\n') + `\n` +
+    `━━━━━━━━━━━━━━━\n` +
+    `💰 *المجموع النهائي:* *${money(it.reduce((a, x) => a + x.q * x.p.p, 0))}*\n` +
+    ($('cNote').value.trim() ? `📝 *ملاحظات:* ${$('cNote').value.trim()}\n` : '') +
+    `━━━━━━━━━━━━━━━\n` +
+    `_مُصدرة إلكترونياً عبر تطبيق الخيزران للمحاسبة_`;
+
   const wa = String(store.whatsapp || '').replace(/\D/g,'').replace(/^00/,'');
   window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(text), '_blank');
-};
+}
+
+$('send').onclick = sendOrderToWhatsApp;
+$('sendFromInvBtn').onclick = sendOrderToWhatsApp;
 
 load();
 })();
