@@ -1497,8 +1497,48 @@ function stopHeroAutoPlay() {
   if (progressTimer) clearInterval(progressTimer);
 }
 
+
+/* ================= صفحة التطبيق الرسمية (عند فتح الرابط دون رمز محل) ================= */
+function renderLanding(){
+  document.title='الخيزران للمحاسبة — محاسبك الذكي في جيبك';
+  const F=[['🛒','البيع بالمفرق والجملة','فاتورة بثوانٍ، بالدين أو بدفعة، بالقطعة أو الكرتونة أو الوزن.'],['💵','الأسعار تتبع الدولار','ارتفع الدولار؟ تتعدل أسعارك وحدها بنفس نسبة ربحك.'],['📦','المستودع والباركود','قارئ باركود دقيق، وتنبيه قبل نفاد البضاعة، وتواريخ الصلاحية.'],['📝','الديون والحسابات','مين إلو ومين عليه، وكشف حساب، وتذكير المدينين على واتساب بضغطة.'],['📈','التقارير والأرباح','ربح اليوم الحقيقي، وجرد رأس المال، وملخص المساء.'],['🌐','متجر إلكتروني مجاني','متجر برابط خاص لمحلك، والطلبات تصلك على واتساب.'],['🔒','نسخ سحابي وحماية','بياناتك محفوظة، وقفل بالبصمة، وصلاحيات للكاشير والمدراء.'],['😄','مساعد ذكي ظريف','اسأله «شو بعت اليوم؟» فيجيبك فوراً… وبيمزح كمان!']];
+  const st=`<style>
+  .lp{max-width:720px;margin:0 auto;padding:22px 16px 40px;color:var(--text)}
+  .lp-hero{text-align:center;padding:26px 14px;border-radius:22px;background:linear-gradient(160deg,rgba(14,165,233,.22),rgba(16,185,129,.12));border:1px solid rgba(255,255,255,.08)}
+  .lp-logo{width:76px;height:76px;border-radius:22px;margin:0 auto 12px;display:grid;place-items:center;font-size:40px;background:var(--primary);color:#fff;font-weight:900}
+  .lp h1{margin:0 0 6px;font-size:26px}.lp-sub{color:var(--muted);margin:0 0 18px;line-height:1.8}
+  .lp-dl{display:inline-flex;align-items:center;gap:10px;border:0;border-radius:16px;padding:15px 26px;font-size:18px;font-weight:900;background:var(--success);color:#fff;cursor:pointer;font-family:inherit}
+  .lp-dl[disabled]{opacity:.6}.lp-ver{font-size:13px;color:var(--muted);margin-top:10px}
+  .lp-bar{height:8px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin:12px auto 0;max-width:320px;display:none}.lp-bar i{display:block;height:100%;width:0;background:var(--success);transition:width .2s}
+  .lp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:18px 0}
+  .lp-card{background:var(--card-solid);border:1px solid rgba(148,163,184,.18);border-radius:16px;padding:14px}
+  .lp-card b{display:block;font-size:15px;margin:6px 0 4px}.lp-card span{font-size:26px}.lp-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.7}
+  .lp-steps{background:var(--card-solid);border-radius:16px;padding:14px 18px;line-height:2;font-size:14px;border:1px solid rgba(148,163,184,.18)}
+  .lp-wa{display:block;text-align:center;margin-top:16px;padding:14px;border-radius:16px;background:#25d366;color:#fff;text-decoration:none;font-weight:900}
+  .lp-foot{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
+  </style>`;
+  document.body.innerHTML=st+`<main class="lp">
+   <section class="lp-hero"><div class="lp-logo">خ</div><h1>الخيزران للمحاسبة</h1><p class="lp-sub">محاسبك الذكي في جيبك — لكل محل ومستودع وموزع.<br>بالعربي، سهل، ويعمل دون إنترنت.</p>
+    <button type="button" class="lp-dl" id="lpDl">⬇️ حمّل التطبيق</button><div class="lp-bar" id="lpBar"><i id="lpFill"></i></div><div class="lp-ver" id="lpVer">أندرويد</div></section>
+   <section class="lp-grid">${F.map(f=>`<div class="lp-card"><span>${f[0]}</span><b>${f[1]}</b><p>${f[2]}</p></div>`).join('')}</section>
+   <section class="lp-steps"><b>📲 طريقة التثبيت</b><br>1. اضغط «حمّل التطبيق» وانتظر اكتمال التنزيل.<br>2. افتح الملف من «التنزيلات».<br>3. إن سألك الهاتف، اسمح بـ«التثبيت من هذا المصدر».<br>4. اضغط «تثبيت»، ثم افتح التطبيق وسجّل محلك.</section>
+   <a class="lp-wa" href="https://wa.me/963981250022" target="_blank" rel="noopener">💬 الدعم الفني على واتساب: 00963981250022</a>
+   <div class="lp-foot">© الخيزران للمحاسبة</div></main>`;
+  let info=null;
+  fetch(DB+'/app_config/apk_update.json',{cache:'no-store'}).then(r=>r.json()).then(u=>{info=u;if(u&&u.versionName)document.getElementById('lpVer').textContent='أندرويد — الإصدار '+u.versionName;}).catch(()=>{});
+  document.getElementById('lpDl').onclick=async()=>{const b=document.getElementById('lpDl');const ver=document.getElementById('lpVer');
+    if(!info||!info.url){ver.textContent='تعذر الوصول إلى ملف التحميل الآن. تواصل معنا على واتساب.';return;}
+    if(/^https:/.test(info.url)){location.href=info.url;return;}
+    try{b.disabled=true;const key=info.url.replace(/^rtdb:/,'');const meta=await (await fetch(DB+'/app_config/'+key+'/meta.json',{cache:'no-store'})).json();
+      if(!meta||!meta.chunks)throw new Error('الملف غير متاح');document.getElementById('lpBar').style.display='block';const parts=[];
+      for(let i=0;i<meta.chunks;i++){parts.push(await (await fetch(DB+'/app_config/'+key+'/c/'+i+'.json',{cache:'no-store'})).json());const pc=Math.round((i+1)*100/meta.chunks);document.getElementById('lpFill').style.width=pc+'%';b.textContent='⏳ '+pc+'%';}
+      const bin=atob(parts.join(''));const u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+      const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([u8],{type:'application/vnd.android.package-archive'}));a.download=meta.name||'khizaran.apk';document.body.appendChild(a);a.click();
+      b.textContent='✅ اكتمل التنزيل';ver.textContent='افتح الملف من «التنزيلات» واضغط «تثبيت».';
+    }catch(e){b.disabled=false;b.textContent='⬇️ إعادة المحاولة';ver.textContent='تعذر التنزيل: '+(e.message||e);}};
+}
 async function load(){
-  if (!code) { $('state').textContent = 'رابط المتجر غير مكتمل.'; return; }
+  if (!code) { renderLanding(); return; }
   try {
     const r = await fetch(DB + '/stores/' + encodeURIComponent(code) + '.json', {cache: 'no-store'});
     store = await r.json();
