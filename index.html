@@ -975,6 +975,7 @@ footer { text-align: center; color: var(--muted); font-size: 11px; padding: 24px
         <a class="tool-btn" id="directWaBtn" href="#" target="_blank" title="تواصل مع المحل" style="display:none">💬</a>
         <button type="button" class="tool-btn" id="shareStoreBtn" title="مشاركة رابط المتجر">🔗</button>
         <button type="button" class="tool-btn" id="themeBtn" title="تغيير المظهر">☀️</button>
+        <button type="button" class="tool-btn" id="adminBtn" title="دخول مدير المتجر" style="display:none">🔐</button>
       </div>
     </div>
   </div>
@@ -1355,10 +1356,10 @@ function initHeroShowcase() {
   // Priority preload HD images for the 10 newest products
   heroItems.forEach(p => {
     if (p.i && !(p.id in imgCache)) {
-      fetch(DB + '/stores_img/' + encodeURIComponent(code) + '/' + encodeURIComponent(p.id) + '.json')
+      fetch(imgUrl(p.id))
         .then(r => r.json())
         .then(rawImg => {
-          enhanceImageHD(rawImg, enhanced => {
+          enhanceFor(p.id, rawImg, enhanced => {
             imgCache[p.id] = enhanced;
             refreshHeroImages(p.id);
             const gridEl = document.querySelector(`.ph[data-img="${CSS.escape(String(p.id))}"]`);
@@ -1564,6 +1565,7 @@ async function load(){
     }
   } catch(_) {}
 
+  await loadEdits();
   document.title = store.shopName + ' — متجر';
   $('shopName').textContent = store.shopName || 'متجر';
   $('shopAvatar').textContent = (store.shopName || 'م').trim().charAt(0);
@@ -1705,9 +1707,9 @@ async function loadImg(el){
   const id = el.dataset.img;
   try {
     if (!(id in imgCache)) {
-      const r = await fetch(DB + '/stores_img/' + encodeURIComponent(code) + '/' + encodeURIComponent(id) + '.json');
+      const r = await fetch(imgUrl(id));
       const rawImg = await r.json();
-      enhanceImageHD(rawImg, enhanced => {
+      enhanceFor(id, rawImg, enhanced => {
         imgCache[id] = enhanced;
         updateElementImage(el, enhanced);
         refreshHeroImages(id);
@@ -1760,6 +1762,7 @@ function openQuickView(id){
     <div class="panel-header">
       <h2>تفاصيل المنتج</h2>
       <div style="display:flex;gap:6px">
+        ${ADM ? '<button type="button" class="close-btn" id="editProdBtn" title="تعديل الصورة والوصف">✏️</button>' : ''}
         <button type="button" class="close-btn" id="shareProdBtn" title="مشاركة المنتج">🔗</button>
         <button type="button" class="close-btn" id="closeQvBtn">✕</button>
       </div>
@@ -1770,6 +1773,7 @@ function openQuickView(id){
     </div>
     ${p.c ? `<small style="color:var(--primary);font-weight:800">${esc(p.c)}</small>` : ''}
     <h3 style="margin:4px 0 6px;font-size:16px">${esc(p.n)}</h3>
+    ${p.d ? `<p class="qv-desc">${esc(p.d)}</p>` : ''}
     ${p.u ? `<p style="color:var(--muted);margin:0 0 10px;font-size:13px">${esc(p.u)}</p>` : ''}
     <div class="total" style="margin:8px 0;display:flex;justify-content:space-between;align-items:center">
       <span>${fakePrice ? 'السعر بعد العرض' : 'السعر'}</span>
@@ -1782,6 +1786,7 @@ function openQuickView(id){
   `;
   $('qvSheet').classList.add('on');
   $('closeQvBtn').onclick = () => $('qvSheet').classList.remove('on');
+  if ($('editProdBtn')) $('editProdBtn').onclick = () => openEditor(p.id);
   $('shareProdBtn').onclick = () => {
     const url = location.origin + location.pathname + '?s=' + encodeURIComponent(code) + '&p=' + encodeURIComponent(p.id);
     if (navigator.share) navigator.share({title: p.n, text: p.n + ' - ' + money(p.p), url}).catch(()=>{});
@@ -2310,6 +2315,203 @@ async function sendOrderToWhatsApp(){
 
 $('send').onclick = sendOrderToWhatsApp;
 $('sendFromInvBtn').onclick = sendOrderToWhatsApp;
+
+/* ============================================================================
+   تعديل صور ووصف المواد من داخل المتجر (لصاحب المتجر ومدرائه بكلمة سر)
+   - التعديلات تُحفظ في stores_edit و stores_img_hd، ولا ترجع إلى التطبيق.
+   - «تحديث متجري» من التطبيق لا يمسح هذه التعديلات.
+   ============================================================================ */
+const FB_KEY = 'AIzaSyDAjnMRfdHTWm4q3xp0S6euMNOJdTYInW0';
+const ADM_KEY = 'khz_store_adm_' + code;
+let EDITS = {}, EDITORS = {}, ADM = null;
+
+function imgUrl(id){
+  const e = EDITS[String(id)];
+  return DB + (e && e.img ? '/stores_img_hd/' : '/stores_img/') + encodeURIComponent(code) + '/' + encodeURIComponent(id) + '.json' + (e && e.img ? '?v=' + e.img : '');
+}
+function enhanceFor(id, raw, cb){
+  const e = EDITS[String(id)];
+  if (e && e.img) cb(raw); else enhanceImageHD(raw, cb);
+}
+function applyEdits(){
+  if (!store || !Array.isArray(store.products)) return;
+  store.products.forEach(p => {
+    const e = EDITS[String(p.id)];
+    p.d = e && e.d ? String(e.d) : '';
+    if (e && e.img) p.i = 1;
+  });
+}
+async function loadEdits(){
+  try { const r = await fetch(DB + '/stores_edit/' + encodeURIComponent(code) + '.json', {cache: 'no-store'}); EDITS = (await r.json()) || {}; } catch(_) { EDITS = {}; }
+  if (typeof EDITS !== 'object' || Array.isArray(EDITS)) EDITS = {};
+  applyEdits();
+  try { const r = await fetch(DB + '/stores_editors/' + encodeURIComponent(code) + '.json', {cache: 'no-store'}); EDITORS = (await r.json()) || {}; } catch(_) { EDITORS = {}; }
+  if (typeof EDITORS !== 'object' || Array.isArray(EDITORS)) EDITORS = {};
+  try { ADM = JSON.parse(localStorage.getItem(ADM_KEY) || 'null'); } catch(_) { ADM = null; }
+  if (ADM && !allowed(ADM.uid)) { ADM = null; try { localStorage.removeItem(ADM_KEY); } catch(_) {} }
+  $('adminBtn').style.display = 'grid';
+  $('adminBtn').onclick = () => ADM ? openAdminMenu() : openLogin();
+  admBanner();
+}
+const allowed = uid => !!uid && (uid === store.ownerUid || !!EDITORS[uid]);
+
+/* ---------- جلسة Firebase ---------- */
+async function signIn(email, password){
+  const r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + FB_KEY, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: String(email).trim().toLowerCase(), password, returnSecureToken: true})});
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || !d.idToken) {
+    const m = (d.error && d.error.message) || '';
+    throw new Error(/INVALID|PASSWORD|NOT_FOUND|CREDENTIAL/.test(m) ? 'كلمة السر غير صحيحة.' : /TOO_MANY/.test(m) ? 'محاولات كثيرة. انتظر قليلاً ثم أعد المحاولة.' : 'تعذر الدخول. تأكد من الإنترنت.');
+  }
+  return {idToken: d.idToken, refreshToken: d.refreshToken, expiresAt: Date.now() + (Number(d.expiresIn) || 3600) * 1000, uid: d.localId};
+}
+async function token(){
+  if (!ADM) throw new Error('سجّل الدخول أولاً.');
+  if (ADM.expiresAt - Date.now() > 60000) return ADM.idToken;
+  const r = await fetch('https://securetoken.googleapis.com/v1/token?key=' + FB_KEY, {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(ADM.refreshToken)});
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || !d.id_token) { logout(); throw new Error('انتهت الجلسة. سجّل الدخول مرة أخرى.'); }
+  ADM.idToken = d.id_token; ADM.refreshToken = d.refresh_token || ADM.refreshToken; ADM.expiresAt = Date.now() + (Number(d.expires_in) || 3600) * 1000;
+  try { localStorage.setItem(ADM_KEY, JSON.stringify(ADM)); } catch(_) {}
+  return ADM.idToken;
+}
+async function put(path, body){
+  const t = await token();
+  const r = await fetch(DB + path + '.json?auth=' + encodeURIComponent(t), {method: body === null ? 'DELETE' : 'PUT', headers: {'Content-Type': 'application/json'}, body: body === null ? undefined : JSON.stringify(body)});
+  if (r.status === 401 || r.status === 403) throw new Error('المخدم رفض الحفظ: لا صلاحية لهذا الحساب، أو لم تُضف قواعد التعديل في Firebase بعد.');
+  if (!r.ok) throw new Error('تعذر الحفظ (HTTP ' + r.status + ').');
+}
+function logout(){ ADM = null; try { localStorage.removeItem(ADM_KEY); } catch(_) {} admBanner(); render(); }
+
+/* ---------- واجهات ---------- */
+function sheet(id, html){
+  let el = $(id);
+  if (!el) { el = document.createElement('div'); el.id = id; el.className = 'sheet'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.innerHTML = '<div class="panel"></div>'; document.body.appendChild(el); el.addEventListener('click', e => { if (e.target === el) el.classList.remove('on'); }); }
+  el.querySelector('.panel').innerHTML = '<div class="drag-pill"></div>' + html;
+  el.classList.add('on');
+  return el;
+}
+function admBanner(){
+  let b = $('admBanner');
+  if (!ADM) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement('div'); b.id = 'admBanner'; document.body.appendChild(b); }
+  b.innerHTML = '✏️ وضع التعديل — ' + esc(ADM.name) + ' · <small>افتح أي منتج ثم ✏️</small> <button type="button" id="admOut">خروج</button>';
+  $('admOut').onclick = logout;
+}
+function openLogin(){
+  const eds = Object.entries(EDITORS).filter(([, v]) => v && v.k && v.n);
+  const el = sheet('admSheet', `<div class="panel-header"><h2>🔐 دخول مدير المتجر</h2><button type="button" class="close-btn" data-x>✕</button></div>
+    <p class="adm-note">لتعديل صور المواد ووصفها. الزبائن لا يرون هذا الزر إلا كرمز قفل.</p>
+    <label class="adm-l">من أنت؟</label>
+    <select id="admWho" class="adm-in"><option value="__owner">صاحب المتجر (حساب التطبيق)</option>${eds.map(([uid, v]) => `<option value="${esc(uid)}">${esc(v.n)}</option>`).join('')}</select>
+    <div id="admEmailBox"><label class="adm-l">بريد حساب التطبيق</label><input id="admEmail" class="adm-in" type="email" dir="ltr" autocomplete="username" placeholder="name@example.com"></div>
+    <label class="adm-l">كلمة السر</label><input id="admPass" class="adm-in" type="password" autocomplete="current-password" placeholder="••••••">
+    <div id="admErr" class="adm-err"></div>
+    <button type="button" class="adm-btn" id="admGo">دخول</button>`);
+  el.querySelector('[data-x]').onclick = () => el.classList.remove('on');
+  const who = $('admWho');
+  const sync = () => { $('admEmailBox').style.display = who.value === '__owner' ? '' : 'none'; };
+  who.onchange = sync; sync();
+  $('admGo').onclick = async () => {
+    const pass = $('admPass').value; $('admErr').textContent = '';
+    if (!pass) return $('admErr').textContent = 'اكتب كلمة السر.';
+    const isOwner = who.value === '__owner';
+    const email = isOwner ? $('admEmail').value : (code.toLowerCase() + '.' + EDITORS[who.value].k + '@khizaran-store.app');
+    if (isOwner && !/@/.test(email)) return $('admErr').textContent = 'اكتب بريد حساب التطبيق.';
+    const b = $('admGo'); b.disabled = true; b.textContent = 'جارٍ الدخول…';
+    try {
+      const s = await signIn(email, pass);
+      if (!allowed(s.uid)) throw new Error('هذا الحساب ليس صاحب هذا المتجر ولا من مدرائه.');
+      ADM = Object.assign(s, {name: isOwner ? 'صاحب المتجر' : EDITORS[s.uid].n});
+      try { localStorage.setItem(ADM_KEY, JSON.stringify(ADM)); } catch(_) {}
+      el.classList.remove('on'); admBanner(); render(); showToast('✅ أهلاً ' + ADM.name + '. افتح أي منتج واضغط ✏️');
+    } catch(e) { $('admErr').textContent = e.message; } finally { b.disabled = false; b.textContent = 'دخول'; }
+  };
+}
+function openAdminMenu(){
+  const n = Object.values(EDITS).filter(e => e && (e.img || e.d)).length;
+  const el = sheet('admSheet', `<div class="panel-header"><h2>✏️ وضع التعديل</h2><button type="button" class="close-btn" data-x>✕</button></div>
+    <p class="adm-note">أنت داخل باسم <b>${esc(ADM.name)}</b>. المواد المعدّلة: <b>${n}</b>.<br>افتح أي منتج ثم اضغط ✏️ لتغيير صورته أو وصفه. التعديلات تظهر للزبائن فوراً ولا تتغير عند «تحديث متجري» من التطبيق.</p>
+    <button type="button" class="adm-btn" id="admLogout" style="background:var(--danger)">تسجيل الخروج</button>`);
+  el.querySelector('[data-x]').onclick = () => el.classList.remove('on');
+  $('admLogout').onclick = () => { el.classList.remove('on'); logout(); };
+}
+function compress(file){
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onerror = () => rej(new Error('تعذر قراءة الصورة.'));
+    fr.onload = () => { const img = new Image(); img.onerror = () => rej(new Error('الملف ليس صورة صالحة.')); img.onload = () => {
+      const max = 1100, k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, c.width, c.height);
+      let q = 0.86, out = c.toDataURL('image/jpeg', q);
+      while (out.length > 420000 && q > 0.5) { q -= 0.08; out = c.toDataURL('image/jpeg', q); }
+      res({data: out, w: c.width, h: c.height});
+    }; img.src = fr.result; };
+    fr.readAsDataURL(file);
+  });
+}
+function openEditor(id){
+  const p = store.products.find(x => String(x.id) === String(id)); if (!p || !ADM) return;
+  const e = EDITS[String(p.id)] || {};
+  let newImg = null, removeImg = false;
+  const cur = imgCache[p.id];
+  const el = sheet('admSheet', `<div class="panel-header"><h2>✏️ ${esc(p.n)}</h2><button type="button" class="close-btn" data-x>✕</button></div>
+    <div class="adm-prev" id="admPrev">${typeof cur === 'string' && /^data:image\//.test(cur) ? `<img src="${cur}" alt="">` : '🛍️'}</div>
+    <div id="admImgInfo" class="adm-note">${e.img ? '📷 صورة خاصة بالمتجر (بجودة عالية).' : 'الصورة الحالية من التطبيق.'}</div>
+    <input type="file" id="admFile" accept="image/*" hidden>
+    <div class="adm-row"><button type="button" class="adm-btn2" id="admPick">📷 تغيير الصورة</button>${e.img ? '<button type="button" class="adm-btn2" id="admRm">↩ صورة التطبيق</button>' : ''}</div>
+    <label class="adm-l">وصف المنتج (يظهر للزبون)</label>
+    <textarea id="admDesc" class="adm-in" rows="5" maxlength="1000" placeholder="مثال: أصلي، كفالة سنة، متوفر بثلاثة ألوان…">${esc(e.d || '')}</textarea>
+    <div id="admErr" class="adm-err"></div>
+    <button type="button" class="adm-btn" id="admSave">💾 حفظ في المتجر</button>`);
+  el.querySelector('[data-x]').onclick = () => el.classList.remove('on');
+  $('admPick').onclick = () => $('admFile').click();
+  if ($('admRm')) $('admRm').onclick = () => { removeImg = true; newImg = null; $('admPrev').innerHTML = '↩'; $('admImgInfo').textContent = 'ستعود صورة التطبيق بعد الحفظ.'; };
+  $('admFile').onchange = async ev => {
+    const f = ev.target.files && ev.target.files[0]; ev.target.value = ''; if (!f) return;
+    try { const c = await compress(f); newImg = c.data; removeImg = false; $('admPrev').innerHTML = `<img src="${newImg}" alt="">`; $('admImgInfo').textContent = '📷 صورة جديدة ' + c.w + '×' + c.h + ' — ' + Math.round(newImg.length * 0.75 / 1024) + ' ك.ب'; }
+    catch(err) { $('admErr').textContent = err.message; }
+  };
+  $('admSave').onclick = async () => {
+    const d = $('admDesc').value.trim().slice(0, 1000);
+    const b = $('admSave'); b.disabled = true; b.textContent = 'جارٍ الحفظ…'; $('admErr').textContent = '';
+    try {
+      const pid = encodeURIComponent(p.id), base = '/' + encodeURIComponent(code) + '/' + pid;
+      let img = e.img || 0;
+      if (newImg) { await put('/stores_img_hd' + base, newImg); img = Date.now(); }
+      else if (removeImg) { await put('/stores_img_hd' + base, null); img = 0; }
+      const rec = (d || img) ? {d: d || null, img: img || null, by: ADM.name, at: Date.now()} : null;
+      await put('/stores_edit' + base, rec);
+      if (rec) EDITS[String(p.id)] = rec; else delete EDITS[String(p.id)];
+      if (newImg) imgCache[p.id] = newImg; else if (removeImg) delete imgCache[p.id];
+      applyEdits(); if (removeImg && !p.i) delete imgCache[p.id];
+      el.classList.remove('on'); render(); showToast('✅ حُفظ التعديل في المتجر');
+      if (removeImg) { const ph = document.querySelector(`.ph[data-img="${CSS.escape(String(p.id))}"]`); if (ph) loadImg(ph); }
+      openQuickView(p.id);
+    } catch(err) { $('admErr').textContent = err.message; } finally { b.disabled = false; b.textContent = '💾 حفظ في المتجر'; }
+  };
+}
+(function admCss(){
+  const c = document.createElement('style');
+  c.textContent = `.qv-desc{white-space:pre-wrap;line-height:1.75;font-size:13.5px;color:var(--text);background:var(--soft);border-radius:12px;padding:10px 12px;margin:6px 0 10px}
+  .adm-note{font-size:13px;line-height:1.8;color:var(--muted);margin:6px 0 10px}
+  .adm-l{display:block;font-size:13px;font-weight:800;margin:10px 0 6px}
+  .adm-in{width:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1px solid var(--line, rgba(127,127,127,.3));background:var(--soft);color:var(--text);font:inherit;font-size:15px}
+  textarea.adm-in{resize:vertical;min-height:110px;line-height:1.7}
+  .adm-err{color:var(--danger,#e5484d);font-size:13px;font-weight:700;min-height:18px;margin:8px 0}
+  .adm-btn{width:100%;padding:13px;border:0;border-radius:12px;background:var(--primary);color:#fff;font:inherit;font-weight:900;font-size:15px;cursor:pointer}
+  .adm-btn:disabled{opacity:.6}
+  .adm-row{display:flex;gap:8px;margin:6px 0}
+  .adm-btn2{flex:1;padding:11px;border-radius:12px;border:1px solid var(--primary);background:transparent;color:var(--primary);font:inherit;font-weight:800;cursor:pointer}
+  .adm-prev{aspect-ratio:16/11;background:var(--soft);border-radius:14px;display:grid;place-items:center;overflow:hidden;font-size:42px}
+  .adm-prev img{width:100%;height:100%;object-fit:contain}
+  #admBanner{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:60;background:#f59e0b;color:#111;font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:flex;gap:8px;align-items:center;max-width:calc(100% - 24px);white-space:nowrap;overflow:hidden}
+  #admBanner small{font-weight:600;opacity:.8;overflow:hidden;text-overflow:ellipsis}
+  #admBanner button{border:0;background:#111;color:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}`;
+  document.head.appendChild(c);
+})();
+
 
 load();
 })();
