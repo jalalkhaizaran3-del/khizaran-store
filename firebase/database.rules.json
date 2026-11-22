@@ -318,6 +318,30 @@
           ".validate": "newData.hasChildren(['type', 'by', 'at']) && newData.child('by').val() === auth.uid && newData.child('at').val() === now && newData.child('type').isString()"
         }
       }
+    },
+    "stores_extra": {
+      "$code": {
+        ".read": true,
+        ".write": "auth != null && (root.child('stores').child($code).child('ownerUid').val() === auth.uid || root.child('stores_editors').child($code).child(auth.uid).exists()) && (!newData.exists() || (root.child('admins').child(auth.uid).val() === true || (root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('paidUntil').isNumber() && root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('paidUntil').val() > now) || (root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('trialStart').isNumber() && root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('trialStart').val() + 2592000000 > now)))",
+        ".validate": "!newData.exists() || newData.hasChildren(['cfg','items'])",
+        "cfg": {
+          ".validate": "newData.child('rate').isNumber() && newData.child('rate').val() > 0 && newData.child('rate').val() < 1000000 && newData.child('cat').isString() && newData.child('cat').val().length > 0 && newData.child('cat').val().length <= 60"
+        },
+        "items": {
+          "$pid": {
+            ".validate": "$pid.matches(/^x[a-z0-9]{1,12}$/) && newData.child('n').isString() && newData.child('n').val().length > 0 && newData.child('n').val().length <= 120 && newData.child('p').isNumber() && newData.child('p').val() >= 0 && newData.child('p').val() < 1000000000000 && (!newData.child('d0').exists() || (newData.child('d0').isString() && newData.child('d0').val().length <= 1000))"
+          }
+        },
+        "by": {
+          ".validate": "newData.isString() && newData.val().length <= 60"
+        },
+        "at": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
     }
   }
 }
