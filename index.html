@@ -2346,7 +2346,7 @@ function applyEdits(){
   store.products.forEach(p => {
     if (p.c0 === undefined) p.c0 = String(p.c || '').trim();
     const e = EDITS[String(p.id)];
-    p.d = e && e.d ? String(e.d) : '';
+    p.d = e && e.d ? String(e.d) : (p.d0 || '');
     if (e && e.img) p.i = 1;
     p.c = e && e.c ? String(e.c) : baseCat(p, rn);
   });
@@ -2356,6 +2356,7 @@ function cleanCat(v){ return String(v || '').replace(/\s+/g, ' ').trim().slice(0
 async function loadEdits(){
   try { const r = await fetch(DB + '/stores_edit/' + encodeURIComponent(code) + '.json', {cache: 'no-store'}); EDITS = (await r.json()) || {}; } catch(_) { EDITS = {}; }
   if (typeof EDITS !== 'object' || Array.isArray(EDITS)) EDITS = {};
+  await loadExtra();
   applyEdits();
   try { const r = await fetch(DB + '/stores_editors/' + encodeURIComponent(code) + '.json', {cache: 'no-store'}); EDITORS = (await r.json()) || {}; } catch(_) { EDITORS = {}; }
   if (typeof EDITORS !== 'object' || Array.isArray(EDITORS)) EDITORS = {};
@@ -2446,9 +2447,11 @@ function openAdminMenu(){
   const el = sheet('admSheet', `<div class="panel-header"><h2>✏️ وضع التعديل</h2><button type="button" class="close-btn" data-x>✕</button></div>
     <p class="adm-note">أنت داخل باسم <b>${esc(ADM.name)}</b>. المواد المعدّلة: <b>${n}</b>.<br>افتح أي منتج ثم اضغط ✏️ لتغيير صورته أو وصفه أو قسمه. التعديلات تظهر للزبائن فوراً ولا تتغير عند «تحديث متجري» من التطبيق.</p>
     <button type="button" class="adm-btn" id="admCats" style="margin-bottom:8px">🗂️ الأقسام (تغيير الأسماء)</button>
+    <button type="button" class="adm-btn" id="admPl" style="margin-bottom:8px">📱 نشرة أسعار الجوالات</button>
     <button type="button" class="adm-btn" id="admLogout" style="background:var(--danger)">تسجيل الخروج</button>`);
   el.querySelector('[data-x]').onclick = () => el.classList.remove('on');
   $('admCats').onclick = openCats;
+  $('admPl').onclick = openPriceList;
   $('admLogout').onclick = () => { el.classList.remove('on'); logout(); };
 }
 function refreshCats(oldName, newName){
@@ -2575,6 +2578,145 @@ function openEditor(id){
     } catch(err) { $('admErr').textContent = err.message; } finally { b.disabled = false; b.textContent = '💾 حفظ في المتجر'; }
   };
 }
+
+/* ============================================================================
+   قسم خاص بالمتجر فقط (مثل «جوالات»): من نشرة أسعار الوكيل بالدولار → سعر بالليرة مع ربح حسب الفئة.
+   - يُحفظ في stores_extra/{code} = {cfg:{rate,cat,tiers}, items:{id:{n,usd,pr,p,d0,o}}}.
+   - لا يدخل برنامج المحاسبة ولا جرده، و«تحديث متجري» من التطبيق لا يمسّه.
+   - صورة كل جهاز ووصفه تُعدّل بزر ✏️ كأي منتج، وتبقى عند لصق نشرة جديدة (المعرّف ثابت من اسم الجهاز).
+   ============================================================================ */
+/* نشرة أسعار الوكيل → مواد متجر (بالليرة) مع ربح حسب فئة السعر. دالة نقية تُنسخ كما هي إلى index.html */
+const PL_DEFAULT = {rate: 151, cat: 'جوالات', tiers: [[50, 2], [100, 3], [200, 4], [300, 6], [400, 8], [500, 9], [1000, 12], [0, 25]]};
+function plProfit(usd, tiers){ for (const [max, pr] of tiers) { if (!(max > 0) || usd <= max) return Number(pr) || 0; } return 0; }
+function plHash(s){ let h = 2166136261; for (const ch of String(s)) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
+function plParse(text, cfg){
+  cfg = Object.assign({}, PL_DEFAULT, cfg || {});
+  const rate = Number(cfg.rate) || 0, items = {}, skipped = [], order = [];
+  const BRANDS = /^(xiaomi|redmi|poco|mi\b|samsung|galaxy|iphone|apple|infinix|honor|tecno|motorola|moto|zte|nubia|nokia|blackview|huawei|oppo|realme|vivo|itel|xpad|ccit|kitop|modem|oneplus|google|pixel)/i;
+  let brand = '';
+  String(text || '').split(/\r?\n/).forEach(raw => {
+    let line = raw.replace(/[`´]/g, '').replace(/\s+/g, ' ').trim();
+    if (!line || /^[━─—_=\-\s]+$/.test(line)) return;
+    // عنوان قسم مثل «📱 XIAOMI 📱»: يحدد الماركة للأسطر التالية
+    const head = line.replace(/[^\p{L}\p{N}+ ]/gu, ' ').replace(/\s+/g, ' ').trim();
+    if (!/\d/.test(line) && /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u.test(line)) {
+      const h = head.replace(/\b(other|others)\b/ig, '').replace(/\+/g, '').trim();
+      brand = /^(xiaomi|samsung|infinix|honor|blackview)$/i.test(h) ? h.charAt(0).toUpperCase() + h.slice(1).toLowerCase() : '';
+      return;
+    }
+    line = line.replace(/^[•·.\-*]+\s*/, '').trim();
+    let name, price = NaN, note = '';
+    const arrow = line.search(/➜|=>|->|→/);
+    if (arrow >= 0) {
+      name = line.slice(0, arrow).trim();
+      let right = line.slice(arrow).replace(/^(➜|=>|->|→)/, '').trim();
+      const m = right.match(/\d+(?:[.,]\d+)?/);
+      if (m) { price = Number(m[0].replace(',', '.')); right = (right.slice(0, m.index) + ' ' + right.slice(m.index + m[0].length)); }
+      note = right.replace(/\$/g, ' ').replace(/\s+/g, ' ').trim();
+    } else {
+      const m = line.match(/^(.*?)(\d+(?:[.,]\d+)?)\s*\$\s*(.*)$/);
+      if (m && m[1].trim()) { name = m[1].trim(); price = Number(m[2].replace(',', '.')); note = m[3].trim(); }
+      else name = line;
+    }
+    name = name.replace(/\s+/g, ' ').trim();
+    if (!name) return;
+    if (!(price > 0)) { skipped.push(line); return; }
+    const full = (brand && !BRANDS.test(name) ? brand + ' ' : '') + name + (note ? ' (' + note + ')' : '');
+    const profit = plProfit(price, cfg.tiers);
+    const id = 'x' + plHash(full.toLowerCase());
+    if (items[id]) { skipped.push(line + ' — مكرر'); return; }
+    items[id] = {n: full.slice(0, 120), usd: price, pr: profit, p: Math.round((price + profit) * rate), d0: plSpecs(name, note).slice(0, 1000)};
+    order.push(id);
+    items[id].o = order.length;
+  });
+  return {items, skipped, count: order.length};
+}
+function plSpecs(name, note){
+  const out = [];
+  const m = name.match(/(\d+)\s*(?:\+\s*(\d+))?\s*\/\s*(\d+)/);
+  if (m) {
+    const a = Number(m[1]) + (m[2] ? 0 : 0), b = Number(m[3]);
+    const ramTxt = m[2] ? m[1] + '+' + m[2] : null;
+    if (ramTxt) out.push('الذاكرة RAM: ' + ramTxt + ' GB', 'التخزين: ' + b + ' GB');
+    else { const ram = Math.min(a, b), st = Math.max(a, b); out.push('الذاكرة RAM: ' + ram + ' GB', 'التخزين: ' + st + ' GB'); }
+  } else {
+    const s = name.match(/\b(32|64|128|256|512|1024)\b/);
+    if (s) out.push('التخزين: ' + s[1] + ' GB');
+  }
+  if (/\b5g\b/i.test(name)) out.push('يدعم شبكات 5G');
+  if (/\b4g\b/i.test(name)) out.push('يدعم شبكات 4G');
+  if (/e-?sim/i.test(name + ' ' + note)) out.push('يدعم eSIM');
+  if (/\b1\s*sim\b/i.test(name)) out.push('شريحة واحدة');
+  if (note) out.push('ملاحظة: ' + note);
+  return out.join('\n');
+}
+
+let EXTRA = null;
+async function loadExtra(){
+  try { const r = await fetch(DB + '/stores_extra/' + encodeURIComponent(code) + '.json', {cache: 'no-store'}); EXTRA = await r.json(); } catch(_) { EXTRA = null; }
+  if (!EXTRA || typeof EXTRA !== 'object' || Array.isArray(EXTRA)) EXTRA = null;
+  mergeExtra();
+}
+function mergeExtra(){
+  if (!store || !Array.isArray(store.products)) return;
+  store.products = store.products.filter(p => !p._x);
+  if (!EXTRA || !EXTRA.items) return;
+  const cat = cleanCat((EXTRA.cfg && EXTRA.cfg.cat) || 'جوالات') || 'جوالات';
+  Object.entries(EXTRA.items).filter(([, v]) => v && v.n && Number(v.p) >= 0)
+    .sort((a, b) => (Number(b[1].o) || 0) - (Number(a[1].o) || 0))
+    .forEach(([id, v]) => store.products.push({id, n: String(v.n), p: Number(v.p), c: cat, u: 'جهاز', i: 0, d0: String(v.d0 || ''), _x: 1}));
+}
+function openPriceList(){
+  const cfg = Object.assign({}, PL_DEFAULT, (EXTRA && EXTRA.cfg) || {});
+  const tiers = (Array.isArray(cfg.tiers) && cfg.tiers.length ? cfg.tiers : PL_DEFAULT.tiers).map(t => [Number(t[0]) || 0, Number(t[1]) || 0]);
+  const n = EXTRA && EXTRA.items ? Object.keys(EXTRA.items).length : 0;
+  const el = sheet('admSheet', `<div class="panel-header"><h2>📱 نشرة أسعار الوكيل</h2><button type="button" class="close-btn" data-x>✕</button></div>
+    <p class="adm-note">الصق نشرة الأسعار بالدولار كما تصلك. يحسب المتجر السعر بالليرة = (سعر الوكيل + ربحك) × سعر الصرف. هذا القسم للمتجر فقط ولا يدخل برنامج المحاسبة. ${n ? 'في المتجر الآن: <b>' + n + '</b> جهاز.' : ''}</p>
+    <div class="adm-row"><div style="flex:1"><label class="adm-l">سعر الصرف (ليرة لكل دولار)</label><input id="plRate" class="adm-in" inputmode="decimal" value="${esc(cfg.rate)}"></div>
+    <div style="flex:1"><label class="adm-l">اسم القسم</label><input id="plCat" class="adm-in" maxlength="60" value="${esc(cfg.cat)}"></div></div>
+    <label class="adm-l">ربحك حسب سعر الوكيل</label>
+    <div class="pl-tiers">${tiers.map((t, i) => `<div class="pl-tier">${i === tiers.length - 1 ? '<span>فوق ذلك</span><input type="hidden" data-tm="' + i + '" value="0">' : `<span>حتى</span><input class="adm-in" data-tm="${i}" inputmode="decimal" value="${t[0]}"><span>$</span>`}<span>← ربح</span><input class="adm-in" data-tp="${i}" inputmode="decimal" value="${t[1]}"><span>$</span></div>`).join('')}</div>
+    <label class="adm-l">نشرة الأسعار</label>
+    <textarea id="plText" class="adm-in" rows="8" dir="ltr" placeholder="• A7 Pro 4/64 ➜110$"></textarea>
+    <div id="plOut" class="adm-note"></div>
+    <div id="admErr" class="adm-err"></div>
+    <div class="adm-row"><button type="button" class="adm-btn2" id="plPrev">👁️ معاينة</button><button type="button" class="adm-btn" id="plSave" style="flex:1" disabled>💾 نشر في المتجر</button></div>
+    ${n ? '<button type="button" class="adm-link" id="plDel" style="color:var(--danger,#e5484d)">🗑 حذف القسم من المتجر</button>' : ''}`);
+  el.querySelector('[data-x]').onclick = () => el.classList.remove('on');
+  let last = null;
+  const read = () => ({rate: Number(String($('plRate').value).replace(',', '.')), cat: cleanCat($('plCat').value),
+    tiers: tiers.map((_, i) => [Number(el.querySelector(`[data-tm="${i}"]`).value) || 0, Number(el.querySelector(`[data-tp="${i}"]`).value) || 0])});
+  const preview = () => {
+    const c = read(); $('admErr').textContent = ''; last = null; $('plSave').disabled = true;
+    if (!(c.rate > 0)) return $('admErr').textContent = 'اكتب سعر الصرف.';
+    if (!c.cat) return $('admErr').textContent = 'اكتب اسم القسم.';
+    const r = plParse($('plText').value, c);
+    if (!r.count) { $('plOut').innerHTML = ''; return $('admErr').textContent = 'لم أجد أي جهاز بسعر في النص.'; }
+    last = {cfg: c, items: r.items};
+    const rows = Object.values(r.items).sort((a, b) => a.o - b.o);
+    $('plOut').innerHTML = `✅ <b>${r.count}</b> جهاز جاهز للنشر${r.skipped.length ? ` · ⚠️ <b>${r.skipped.length}</b> سطر بلا سعر لن يُنشر` : ''}
+      <div class="pl-prev"><table><thead><tr><th>الجهاز</th><th>الوكيل</th><th>ربح</th><th>السعر</th></tr></thead><tbody>${rows.map(i => `<tr><td>${esc(i.n)}</td><td>${i.usd}$</td><td>${i.pr}$</td><td><b>${esc(money(i.p))}</b></td></tr>`).join('')}</tbody></table></div>
+      ${r.skipped.length ? '<details><summary>الأسطر غير المنشورة</summary>' + r.skipped.map(s => '<div dir="ltr">' + esc(s) + '</div>').join('') + '</details>' : ''}`;
+    $('plSave').disabled = false;
+  };
+  $('plPrev').onclick = preview;
+  $('plText').oninput = () => { $('plSave').disabled = true; };
+  $('plSave').onclick = async () => {
+    if (!last) return;
+    const b = $('plSave'); b.disabled = true; b.textContent = 'جارٍ النشر…'; $('admErr').textContent = '';
+    try {
+      const rec = {cfg: last.cfg, items: last.items, by: ADM.name, at: Date.now()};
+      await put('/stores_extra/' + encodeURIComponent(code), rec);
+      EXTRA = rec; mergeExtra(); refreshCats(); el.classList.remove('on');
+      showToast('✅ نُشر ' + Object.keys(rec.items).length + ' جهاز في قسم «' + rec.cfg.cat + '»');
+    } catch(err) { $('admErr').textContent = err.message; b.disabled = false; } finally { b.textContent = '💾 نشر في المتجر'; }
+  };
+  if ($('plDel')) $('plDel').onclick = async () => {
+    if (!confirm('حذف كل أجهزة هذا القسم من المتجر؟ (الصور والأوصاف تبقى محفوظة إن أعدت نشرها)')) return;
+    try { await put('/stores_extra/' + encodeURIComponent(code), null); EXTRA = null; mergeExtra(); refreshCats(); el.classList.remove('on'); showToast('🗑 حُذف القسم'); }
+    catch(err) { $('admErr').textContent = err.message; }
+  };
+}
 (function admCss(){
   const c = document.createElement('style');
   c.textContent = `.qv-desc{white-space:pre-wrap;line-height:1.75;font-size:13.5px;color:var(--text);background:var(--soft);border-radius:12px;padding:10px 12px;margin:6px 0 10px}
@@ -2589,7 +2731,9 @@ function openEditor(id){
   .adm-btn2{flex:1;padding:11px;border-radius:12px;border:1px solid var(--primary);background:transparent;color:var(--primary);font:inherit;font-weight:800;cursor:pointer}
   .adm-prev{aspect-ratio:16/11;background:var(--soft);border-radius:14px;display:grid;place-items:center;overflow:hidden;font-size:42px}
   .adm-prev img{width:100%;height:100%;object-fit:contain}
-  .adm-cat{border:1px solid var(--line, rgba(127,127,127,.3));border-radius:12px;padding:8px 10px;margin:8px 0}
+  .pl-tiers{display:grid;gap:6px}.pl-tier{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700}.pl-tier .adm-in{width:72px;padding:8px;text-align:center}.pl-tier span:first-child{min-width:52px}
+  .pl-prev{max-height:280px;overflow:auto;margin:8px 0;border:1px solid var(--line, rgba(127,127,127,.3));border-radius:10px}.pl-prev table{width:100%;border-collapse:collapse;font-size:12px}.pl-prev td,.pl-prev th{padding:5px 6px;border-bottom:1px solid var(--line, rgba(127,127,127,.2));text-align:center}.pl-prev td:first-child{text-align:right}
+    .adm-cat{border:1px solid var(--line, rgba(127,127,127,.3));border-radius:12px;padding:8px 10px;margin:8px 0}
   .adm-cat-h small{color:var(--muted);font-size:12px}
   .adm-cat .adm-row .adm-in{flex:1;min-width:0}
   .adm-link{border:0;background:none;color:var(--primary);font:inherit;font-size:12.5px;font-weight:800;padding:2px 0;cursor:pointer}
