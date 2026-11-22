@@ -1,0 +1,323 @@
+{
+  "rules": {
+    "admins": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+    "app_config": {
+      ".read": true,
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
+    "accounts": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$deviceKey": {
+        ".read": true,
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        "lastLoginAt": {
+          ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (data.parent().exists() && (root.child('registrations').child($deviceKey).child('firebaseUid').val() === auth.uid || data.parent().child('firebaseUid').val() === auth.uid)))",
+          ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+        },
+        "activatedOnce": {
+          ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (data.parent().exists() && (root.child('registrations').child($deviceKey).child('firebaseUid').val() === auth.uid || data.parent().child('firebaseUid').val() === auth.uid)))",
+          ".validate": "newData.isBoolean()"
+        },
+        "email": {
+          ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (data.parent().exists() && (!data.exists() || data.val() === newData.val()) && (root.child('registrations').child($deviceKey).child('firebaseUid').val() === auth.uid || data.parent().child('firebaseUid').val() === auth.uid)))",
+          ".validate": "newData.isString() && newData.val().length <= 160"
+        },
+        "phone": {
+          ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (data.parent().exists() && (!data.exists() || data.val() === newData.val()) && (root.child('registrations').child($deviceKey).child('firebaseUid').val() === auth.uid || data.parent().child('firebaseUid').val() === auth.uid)))",
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+        "passwordHash": {
+          ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (data.parent().exists() && (data.val() === newData.val() || root.child('registrations').child($deviceKey).child('firebaseUid').val() === auth.uid)))",
+          ".validate": "newData.isString() && newData.val().length <= 128"
+        },
+        "passwordChangedAt": {
+          ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (data.parent().exists() && root.child('registrations').child($deviceKey).child('firebaseUid').val() === auth.uid))",
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+    "registrations": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".indexOn": [
+        "firebaseUid",
+        "accountKey",
+        "status",
+        "createdAt"
+      ],
+      "$deviceKey": {
+        ".read": true,
+        ".write": "(auth != null && root.child('admins').child(auth.uid).val() === true) || !data.exists()",
+        ".validate": "!newData.exists() || (newData.hasChildren(['deviceId']) && newData.child('deviceId').isString()) && (data.exists() || !newData.child('trialStartedAt').exists() || (newData.child('trialStartedAt').val() <= now + 600000 && newData.child('trialStartedAt').val() >= now - 600000 && newData.child('trialEndsAt').val() <= newData.child('trialStartedAt').val() + 1296000000 + 60000))"
+      }
+    },
+    "reg_index": {
+      "$h": {
+        ".read": true,
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || !data.exists())",
+        ".validate": "!newData.exists() || (newData.child('k').isString() && newData.child('k').val().length <= 120)"
+      }
+    },
+    "backups": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".indexOn": [
+        "updatedAt"
+      ],
+      "$deviceKey": {
+        ".read": "auth != null && (root.child('admins').child(auth.uid).val() === true || root.child('registrations').child($deviceKey).child('firebaseUid').val() === auth.uid || (auth.token.email != null && root.child('registrations').child($deviceKey).child('email').isString() && root.child('registrations').child($deviceKey).child('email').val().toLowerCase() === auth.token.email.toLowerCase()))",
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || root.child('registrations').child($deviceKey).child('firebaseUid').val() === auth.uid || (auth.token.email != null && root.child('registrations').child($deviceKey).child('email').isString() && root.child('registrations').child($deviceKey).child('email').val().toLowerCase() === auth.token.email.toLowerCase()))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['updatedAt', 'data']) && newData.child('updatedAt').isNumber())"
+      }
+    },
+    "stores": {
+      ".indexOn": [
+        "ownerUid",
+        "updatedAt"
+      ],
+      "$code": {
+        ".read": true,
+        ".write": "auth != null && (data.exists() ? data.child('ownerUid').val() === auth.uid : newData.child('ownerUid').val() === auth.uid) && (!newData.exists() || (root.child('admins').child(auth.uid).val() === true || (root.child('store_access').child(auth.uid).child('paidUntil').isNumber() && root.child('store_access').child(auth.uid).child('paidUntil').val() > now) || (root.child('store_access').child(auth.uid).child('trialStart').isNumber() && root.child('store_access').child(auth.uid).child('trialStart').val() + 2592000000 > now)))",
+        ".validate": "!newData.exists() || (newData.child('ownerUid').val() === auth.uid && !newData.child('ownerEmail').exists())"
+      }
+    },
+    "stores_img": {
+      "$code": {
+        ".read": true,
+        ".write": "auth != null && root.child('stores').child($code).child('ownerUid').val() === auth.uid && (!newData.exists() || (root.child('admins').child(auth.uid).val() === true || (root.child('store_access').child(auth.uid).child('paidUntil').isNumber() && root.child('store_access').child(auth.uid).child('paidUntil').val() > now) || (root.child('store_access').child(auth.uid).child('trialStart').isNumber() && root.child('store_access').child(auth.uid).child('trialStart').val() + 2592000000 > now)))"
+      }
+    },
+    "stores_edit": {
+      "$code": {
+        ".read": true,
+        "$pid": {
+          ".write": "auth != null && (root.child('stores').child($code).child('ownerUid').val() === auth.uid || root.child('stores_editors').child($code).child(auth.uid).exists()) && (!newData.exists() || root.child('admins').child(auth.uid).val() === true || (root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('paidUntil').isNumber() && root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('paidUntil').val() > now) || (root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('trialStart').isNumber() && root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('trialStart').val() + 2592000000 > now))",
+          ".validate": "!newData.exists() || ((newData.child('d').val() == null || (newData.child('d').isString() && newData.child('d').val().length <= 1000)) && (!newData.child('c').exists() || (newData.child('c').isString() && newData.child('c').val().length <= 60)) && (!$pid.beginsWith('~cat~') || (newData.child('o').isString() && newData.child('o').val().length <= 120 && newData.child('n').isString() && newData.child('n').val().length > 0 && newData.child('n').val().length <= 60)))"
+        }
+      }
+    },
+    "stores_img_hd": {
+      "$code": {
+        ".read": true,
+        "$pid": {
+          ".write": "auth != null && (root.child('stores').child($code).child('ownerUid').val() === auth.uid || root.child('stores_editors').child($code).child(auth.uid).exists()) && (!newData.exists() || root.child('admins').child(auth.uid).val() === true || (root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('paidUntil').isNumber() && root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('paidUntil').val() > now) || (root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('trialStart').isNumber() && root.child('store_access').child(root.child('stores').child($code).child('ownerUid').val()).child('trialStart').val() + 2592000000 > now))",
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().beginsWith('data:image/') && newData.val().length <= 600000)"
+        }
+      }
+    },
+    "stores_editors": {
+      "$code": {
+        ".read": true,
+        ".write": "auth != null && root.child('stores').child($code).child('ownerUid').val() === auth.uid"
+      }
+    },
+    "store_access": {
+      "$uid": {
+        ".read": true,
+        "trialStart": {
+          ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.isNumber() && newData.val() <= now && newData.val() > now - 600000) || root.child('admins').child(auth.uid).val() === true)"
+        },
+        "paidUntil": {
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+        },
+        "note": {
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true"
+        }
+      }
+    },
+    "app_presence": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".indexOn": [
+        "lastSeen"
+      ],
+      "$deviceKey": {
+        ".write": true,
+        ".validate": "!newData.exists() || (newData.hasChildren(['lastSeen']) && newData.child('lastSeen').isNumber())"
+      }
+    },
+    "complaints": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      ".indexOn": [
+        "createdAt",
+        "status"
+      ],
+      "$id": {
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || !data.exists())",
+        ".validate": "!newData.exists() || (newData.hasChildren(['message']) && newData.child('message').isString() && newData.child('message').val().length > 0 && newData.child('message').val().length <= 2000)"
+      }
+    },
+    "shops_sync": {
+      ".read": false,
+      ".write": false,
+      "_link_index": {
+        "$codeHash": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('shops_sync').child(newData.child('shopId').val()).child('meta').child('ownerUid').val() === auth.uid"
+        }
+      },
+      "$shopId": {
+        "meta": {
+          ".read": "auth != null",
+          ".write": "auth != null && ((!data.exists() && newData.child('ownerUid').val() === auth.uid) || (data.child('ownerUid').val() === auth.uid && newData.child('ownerUid').val() === auth.uid))"
+        },
+        "join_requests": {
+          ".read": "auth != null && (root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || (root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('role').val() === 'MANAGER' && root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE'))",
+          "$uid": {
+            ".read": "auth != null && (auth.uid === $uid || root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || (root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('role').val() === 'MANAGER' && root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE'))",
+            ".write": "auth != null && (($uid === auth.uid && (!data.exists() || data.child('requesterUid').val() === auth.uid)) || root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || (root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('role').val() === 'MANAGER' && root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE'))"
+          }
+        },
+        "members": {
+          ".read": "auth != null && (root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || (root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('role').val() === 'MANAGER' && root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE'))",
+          "$uid": {
+            ".read": "auth != null && (auth.uid === $uid || root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || (root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('role').val() === 'MANAGER' && root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE'))",
+            ".write": "auth != null && (root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || ((root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('role').val() === 'MANAGER' && root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE') && $uid !== auth.uid && (!data.exists() || data.child('role').val() !== 'MANAGER') && (!newData.exists() || newData.child('role').val() !== 'MANAGER')) || (auth.uid === $uid && !data.exists() && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'ACTIVE' && newData.child('invite').isString() && root.child('shops_sync').child($shopId).child('invites').child(newData.child('invite').val()).child('state').val() === 'USED' && root.child('shops_sync').child($shopId).child('invites').child(newData.child('invite').val()).child('acceptedBy').val() === auth.uid && root.child('shops_sync').child($shopId).child('invites').child(newData.child('invite').val()).child('role').val() === newData.child('role').val() && (newData.child('role').val() === 'MANAGER' || newData.child('role').val() === 'DISTRIBUTOR') && newData.child('perms').child('sell').val() === root.child('shops_sync').child($shopId).child('invites').child(newData.child('invite').val()).child('pm').child('sell').val() && newData.child('perms').child('purchase').val() === root.child('shops_sync').child($shopId).child('invites').child(newData.child('invite').val()).child('pm').child('purchase').val() && newData.child('perms').child('stock').val() === root.child('shops_sync').child($shopId).child('invites').child(newData.child('invite').val()).child('pm').child('stock').val() && newData.child('perms').child('prices').val() === root.child('shops_sync').child($shopId).child('invites').child(newData.child('invite').val()).child('pm').child('prices').val() && newData.child('perms').child('reports').val() === root.child('shops_sync').child($shopId).child('invites').child(newData.child('invite').val()).child('pm').child('reports').val() && newData.child('perms').child('approve').val() === root.child('shops_sync').child($shopId).child('invites').child(newData.child('invite').val()).child('pm').child('approve').val() && newData.child('perms').child('invite').val() === root.child('shops_sync').child($shopId).child('invites').child(newData.child('invite').val()).child('pm').child('invite').val()))"
+          }
+        },
+        "catalog": {
+          ".read": "auth != null && (root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE')",
+          ".write": "auth != null && root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid"
+        },
+        "invoices": {
+          ".read": "auth != null && (root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || (root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('role').val() === 'MANAGER' && root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE'))",
+          ".indexOn": [
+            "cloudStatus",
+            "createdAt",
+            "date"
+          ],
+          "$id": {
+            ".read": "auth != null && (root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE')",
+            ".write": "auth != null && (root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || (root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE' && !data.exists() && newData.exists() && newData.child('cloudStatus').val() === 'PENDING'))",
+            ".validate": "!newData.exists() || root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || !newData.child('invoice').child('purNum').exists() || root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('perms').child('purchase').val() !== false"
+          }
+        },
+        "product_requests": {
+          ".read": "auth != null && root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid",
+          ".indexOn": [
+            "status",
+            "createdAt"
+          ],
+          "$requestId": {
+            ".write": "auth != null && (root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid || (!data.exists() && root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE' && root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('role').val() === 'MANAGER' && newData.child('requesterUid').val() === auth.uid && newData.child('requesterRole').val() === 'MANAGER' && newData.child('status').val() === 'PENDING'))"
+          }
+        },
+        "notices": {
+          ".read": "auth != null && root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid",
+          "$id": {
+            ".write": "auth != null && ((!data.exists() && root.child('shops_sync').child($shopId).child('members').child(auth.uid).child('status').val() === 'ACTIVE') || root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid)"
+          }
+        },
+        "invites": {
+          ".read": "auth != null && root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid",
+          "$code": {
+            ".read": "auth != null",
+            ".write": "auth != null && ((!data.exists() && root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid && newData.child('state').val() === 'ACTIVE') || (data.exists() && data.child('state').val() === 'ACTIVE' && ((newData.child('state').val() === 'USED' && newData.child('acceptedBy').val() === auth.uid && newData.child('acceptedAt').val() === now && data.child('expiresAt').val() > now) || (newData.child('state').val() === 'CANCELLED' && root.child('shops_sync').child($shopId).child('meta').child('ownerUid').val() === auth.uid))))",
+            ".validate": "newData.hasChildren(['role','state'])"
+          }
+        },
+        ".write": "auth != null && !newData.exists() && data.child('meta').child('ownerUid').val() === auth.uid"
+      },
+      "_invite_index": {
+        "$code": {
+          ".read": "auth != null",
+          ".write": "auth != null && newData.exists() && root.child('shops_sync').child(newData.child('s').val()).child('meta').child('ownerUid').val() === auth.uid && (!data.exists() || data.child('o').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['s','o','at']) && newData.child('o').val() === auth.uid && newData.child('s').isString() && $code.matches(/^[A-Z0-9]{8,24}$/)"
+        }
+      }
+    },
+    "drm_index": {
+      "$drm": {
+        ".read": true,
+        ".write": "auth != null && !data.exists()",
+        ".validate": "newData.isString() && newData.val().length < 80"
+      }
+    },
+    "time_probe": {
+      "$k": {
+        ".read": false,
+        ".write": true,
+        ".validate": "newData.val() === now"
+      }
+    },
+    "ui_prefs": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "!newData.exists() || (newData.hasChildren(['v','editedAt','updatedAt','data']) && newData.child('data').isString() && newData.child('data').val().length < 60000 && newData.child('editedAt').isNumber() && newData.child('updatedAt').val() === now)",
+        "$other": {
+          ".validate": "$other === 'v' || $other === 'editedAt' || $other === 'updatedAt' || $other === 'data'"
+        }
+      }
+    },
+    "drug_db": {
+      ".read": false,
+      "$bc": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "!newData.exists() || ($bc.matches(/^[0-9]{8,14}$/) && newData.hasChildren(['n','at']) && newData.child('n').isString() && newData.child('n').val().length > 0 && newData.child('n').val().length <= 120 && (!newData.child('n2').exists() || (newData.child('n2').isString() && newData.child('n2').val().length <= 120)) && (!newData.child('p').exists() || (newData.child('p').isNumber() && newData.child('p').val() >= 0 && newData.child('p').val() < 1000000000)) && (!newData.child('cu').exists() || newData.child('cu').val() === 'USD' || newData.child('cu').val() === 'SYP') && (!newData.child('u').exists() || (newData.child('u').isString() && newData.child('u').val().length <= 20)) && newData.child('at').isNumber())"
+        }
+      }
+    },
+    "responder_access": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        "trialStart": {
+          ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.isNumber() && newData.val() <= now && newData.val() > now - 600000) || root.child('admins').child(auth.uid).val() === true)"
+        },
+        "paidUntil": {
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          ".validate": "newData.isNumber()"
+        },
+        "plan": {
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          ".validate": "newData.isString() && newData.val().matches(/^(MONTHLY|ANNUAL|CUSTOM|NONE)$/)"
+        },
+        "note": {
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          ".validate": "newData.isString() && newData.val().length <= 300"
+        },
+        "suspended": {
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          ".validate": "newData.isBoolean()"
+        },
+        "storeCode": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9]{1,16}$/) && root.child('stores').child(newData.val()).child('ownerUid').val() === $uid"
+        },
+        "shopName": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+          ".validate": "newData.isString() && newData.val().length <= 120"
+        },
+        "email": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+          ".validate": "newData.isString() && newData.val() === auth.token.email"
+        },
+        "lastSeen": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.val() === now"
+        },
+        "appVersion": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "responder_events": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        "$eventId": {
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['type', 'by', 'at']) && newData.child('by').val() === auth.uid && newData.child('at').val() === now && newData.child('type').isString()"
+        }
+      }
+    }
+  }
+}

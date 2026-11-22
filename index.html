@@ -1762,7 +1762,7 @@ function openQuickView(id){
     <div class="panel-header">
       <h2>تفاصيل المنتج</h2>
       <div style="display:flex;gap:6px">
-        ${ADM ? '<button type="button" class="close-btn" id="editProdBtn" title="تعديل الصورة والوصف">✏️</button>' : ''}
+        ${ADM ? '<button type="button" class="close-btn" id="editProdBtn" title="تعديل الصورة والوصف والقسم">✏️</button>' : ''}
         <button type="button" class="close-btn" id="shareProdBtn" title="مشاركة المنتج">🔗</button>
         <button type="button" class="close-btn" id="closeQvBtn">✕</button>
       </div>
@@ -2333,14 +2333,26 @@ function enhanceFor(id, raw, cb){
   const e = EDITS[String(id)];
   if (e && e.img) cb(raw); else enhanceImageHD(raw, cb);
 }
+/* الأقسام: تغيير اسم قسم يُحفظ في stores_edit/{code}/~cat~… = {o: اسم القسم في التطبيق, n: الاسم في المتجر}
+   ونقل منتج لقسم آخر يُحفظ في stores_edit/{code}/{id}.c. التصنيف في برنامج المحاسبة لا يتغير،
+   والمواد الجديدة التي تصل من التطبيق بقسم مُعاد تسميته تظهر تلقائياً تحت الاسم الجديد. */
+const CAT_PFX = '~cat~';
+function catKey(name){ let h = 2166136261; for (const ch of String(name)) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return CAT_PFX + h.toString(36) + String(name).length.toString(36); }
+function catRenames(){ const m = {}; Object.entries(EDITS).forEach(([k, v]) => { if (k.startsWith(CAT_PFX) && v && v.o && v.n) m[String(v.o)] = String(v.n); }); return m; }
+function baseCat(p, rn){ const o = p.c0 || ''; return o ? ((rn || catRenames())[o] || o) : ''; }
 function applyEdits(){
   if (!store || !Array.isArray(store.products)) return;
+  const rn = catRenames();
   store.products.forEach(p => {
+    if (p.c0 === undefined) p.c0 = String(p.c || '').trim();
     const e = EDITS[String(p.id)];
     p.d = e && e.d ? String(e.d) : '';
     if (e && e.img) p.i = 1;
+    p.c = e && e.c ? String(e.c) : baseCat(p, rn);
   });
 }
+function storeCats(){ const s = []; (store.products || []).forEach(p => { if (p.c && !s.includes(p.c)) s.push(p.c); }); return s; }
+function cleanCat(v){ return String(v || '').replace(/\s+/g, ' ').trim().slice(0, 60); }
 async function loadEdits(){
   try { const r = await fetch(DB + '/stores_edit/' + encodeURIComponent(code) + '.json', {cache: 'no-store'}); EDITS = (await r.json()) || {}; } catch(_) { EDITS = {}; }
   if (typeof EDITS !== 'object' || Array.isArray(EDITS)) EDITS = {};
@@ -2395,8 +2407,9 @@ function admBanner(){
   let b = $('admBanner');
   if (!ADM) { if (b) b.remove(); return; }
   if (!b) { b = document.createElement('div'); b.id = 'admBanner'; document.body.appendChild(b); }
-  b.innerHTML = '✏️ وضع التعديل — ' + esc(ADM.name) + ' · <small>افتح أي منتج ثم ✏️</small> <button type="button" id="admOut">خروج</button>';
+  b.innerHTML = '✏️ ' + esc(ADM.name) + ' · <small>افتح أي منتج ثم ✏️</small> <button type="button" id="admMenu">⚙️ الأقسام</button> <button type="button" id="admOut">خروج</button>';
   $('admOut').onclick = logout;
+  $('admMenu').onclick = openAdminMenu;
 }
 function openLogin(){
   const eds = Object.entries(EDITORS).filter(([, v]) => v && v.k && v.n);
@@ -2429,12 +2442,73 @@ function openLogin(){
   };
 }
 function openAdminMenu(){
-  const n = Object.values(EDITS).filter(e => e && (e.img || e.d)).length;
+  const n = Object.entries(EDITS).filter(([k, e]) => !k.startsWith(CAT_PFX) && e && (e.img || e.d || e.c)).length;
   const el = sheet('admSheet', `<div class="panel-header"><h2>✏️ وضع التعديل</h2><button type="button" class="close-btn" data-x>✕</button></div>
-    <p class="adm-note">أنت داخل باسم <b>${esc(ADM.name)}</b>. المواد المعدّلة: <b>${n}</b>.<br>افتح أي منتج ثم اضغط ✏️ لتغيير صورته أو وصفه. التعديلات تظهر للزبائن فوراً ولا تتغير عند «تحديث متجري» من التطبيق.</p>
+    <p class="adm-note">أنت داخل باسم <b>${esc(ADM.name)}</b>. المواد المعدّلة: <b>${n}</b>.<br>افتح أي منتج ثم اضغط ✏️ لتغيير صورته أو وصفه أو قسمه. التعديلات تظهر للزبائن فوراً ولا تتغير عند «تحديث متجري» من التطبيق.</p>
+    <button type="button" class="adm-btn" id="admCats" style="margin-bottom:8px">🗂️ الأقسام (تغيير الأسماء)</button>
     <button type="button" class="adm-btn" id="admLogout" style="background:var(--danger)">تسجيل الخروج</button>`);
   el.querySelector('[data-x]').onclick = () => el.classList.remove('on');
+  $('admCats').onclick = openCats;
   $('admLogout').onclick = () => { el.classList.remove('on'); logout(); };
+}
+function refreshCats(oldName, newName){
+  applyEdits();
+  if (cat && oldName !== undefined && cat === oldName) cat = newName || '';
+  if (cat && !storeCats().includes(cat)) cat = '';
+  buildCategories();
+  [...$('cats').children].forEach(x => x.setAttribute('aria-pressed', String(x.dataset.c === cat)));
+  render();
+}
+function openCats(){
+  const rn = catRenames(), cats = storeCats();
+  const count = c => store.products.filter(p => p.c === c).length;
+  const origOf = c => [...new Set(store.products.filter(p => p.c0 && baseCat(p, rn) === c).map(p => p.c0))];
+  const el = sheet('admSheet', `<div class="panel-header"><h2>🗂️ أقسام المتجر</h2><button type="button" class="close-btn" data-x>✕</button></div>
+    <p class="adm-note">غيّر اسم أي قسم كما يظهر للزبائن. أقسام برنامج المحاسبة لا تتغير، والمواد الجديدة التي تصل منه تظهر تحت الاسم الجديد تلقائياً. لنقل منتج إلى قسم آخر افتح المنتج واضغط ✏️.</p>
+    ${cats.length ? cats.map((c, i) => { const o = origOf(c).filter(x => x !== c); return `<div class="adm-cat">
+      <div class="adm-cat-h"><b>${esc(c)}</b> <small>${count(c)} منتج${o.length ? ' · في التطبيق: ' + esc(o.join('، ')) : ''}</small></div>
+      <div class="adm-row"><input class="adm-in" data-ci="${i}" maxlength="60" value="${esc(c)}"><button type="button" class="adm-btn2" data-cs="${i}" style="flex:0 0 auto">💾</button></div>
+      ${o.length ? `<button type="button" class="adm-link" data-cr="${i}">↩ إرجاع اسم التطبيق</button>` : ''}</div>`; }).join('') : '<p class="adm-note">لا توجد أقسام بعد.</p>'}
+    <div id="admErr" class="adm-err"></div>`);
+  el.querySelector('[data-x]').onclick = () => el.classList.remove('on');
+  el.querySelectorAll('[data-cs]').forEach(b => b.onclick = async () => {
+    const i = Number(b.dataset.cs), from = cats[i], to = cleanCat(el.querySelector(`[data-ci="${i}"]`).value);
+    $('admErr').textContent = '';
+    if (!to) return $('admErr').textContent = 'اكتب اسم القسم.';
+    if (to === from) return;
+    if (cats.includes(to) && !confirm('القسم «' + to + '» موجود. هل تريد دمج «' + from + '» معه؟')) return;
+    b.disabled = true;
+    try { await renameCat(from, to); el.classList.remove('on'); showToast('✅ صار اسم القسم: ' + to); }
+    catch(err) { $('admErr').textContent = err.message; b.disabled = false; }
+  });
+  el.querySelectorAll('[data-cr]').forEach(b => b.onclick = async () => {
+    const i = Number(b.dataset.cr), from = cats[i]; b.disabled = true; $('admErr').textContent = '';
+    try {
+      for (const [k, v] of Object.entries(EDITS)) if (k.startsWith(CAT_PFX) && v && v.n === from) { await put('/stores_edit/' + encodeURIComponent(code) + '/' + encodeURIComponent(k), null); delete EDITS[k]; }
+      refreshCats(); el.classList.remove('on'); showToast('↩ عاد اسم التطبيق');
+    } catch(err) { $('admErr').textContent = err.message; b.disabled = false; }
+  });
+}
+async function renameCat(from, to){
+  const rn = catRenames(), base = '/stores_edit/' + encodeURIComponent(code) + '/';
+  const origs = new Set(store.products.filter(p => p.c0 && baseCat(p, rn) === from).map(p => p.c0));
+  Object.values(EDITS).forEach(v => { if (v && v.o && v.n === from) origs.add(String(v.o)); });
+  for (const o of origs) {
+    const k = catKey(o), rec = o === to ? null : {o, n: to, by: ADM.name, at: Date.now()};
+    await put(base + encodeURIComponent(k), rec);
+    if (rec) EDITS[k] = rec; else delete EDITS[k];
+  }
+  const rn2 = catRenames();
+  for (const p of store.products) {
+    const e = EDITS[String(p.id)];
+    if (!e || e.c !== from) continue;
+    const c = to === baseCat(p, rn2) ? null : to;
+    const rec = Object.assign({}, e, {c, by: ADM.name, at: Date.now()});
+    const keep = rec.d || rec.img || rec.c;
+    await put(base + encodeURIComponent(p.id), keep ? rec : null);
+    if (keep) EDITS[String(p.id)] = rec; else delete EDITS[String(p.id)];
+  }
+  refreshCats(from, to);
 }
 function compress(file){
   return new Promise((res, rej) => {
@@ -2463,9 +2537,14 @@ function openEditor(id){
     <div class="adm-row"><button type="button" class="adm-btn2" id="admPick">📷 تغيير الصورة</button>${e.img ? '<button type="button" class="adm-btn2" id="admRm">↩ صورة التطبيق</button>' : ''}</div>
     <label class="adm-l">وصف المنتج (يظهر للزبون)</label>
     <textarea id="admDesc" class="adm-in" rows="5" maxlength="1000" placeholder="مثال: أصلي، كفالة سنة، متوفر بثلاثة ألوان…">${esc(e.d || '')}</textarea>
+    <label class="adm-l">القسم في المتجر</label>
+    <select id="admCat" class="adm-in">${(p.c ? [] : ['<option value="" selected>بلا قسم</option>']).concat(storeCats().map(c => `<option value="${esc(c)}"${c === p.c ? ' selected' : ''}>${esc(c)}</option>`)).join('')}<option value="__new">➕ قسم جديد…</option></select>
+    <input id="admCatNew" class="adm-in" maxlength="60" placeholder="اسم القسم الجديد" style="display:none;margin-top:6px">
+    <div class="adm-note" style="margin-top:4px">${p.c0 ? 'قسمه في برنامج المحاسبة: <b>' + esc(p.c0) + '</b> — ' : ''}النقل هنا للمتجر فقط ولا يتغير عند تحديث المتجر من التطبيق.</div>
     <div id="admErr" class="adm-err"></div>
     <button type="button" class="adm-btn" id="admSave">💾 حفظ في المتجر</button>`);
   el.querySelector('[data-x]').onclick = () => el.classList.remove('on');
+  $('admCat').onchange = () => { const nw = $('admCat').value === '__new'; $('admCatNew').style.display = nw ? '' : 'none'; if (nw) $('admCatNew').focus(); };
   $('admPick').onclick = () => $('admFile').click();
   if ($('admRm')) $('admRm').onclick = () => { removeImg = true; newImg = null; $('admPrev').innerHTML = '↩'; $('admImgInfo').textContent = 'ستعود صورة التطبيق بعد الحفظ.'; };
   $('admFile').onchange = async ev => {
@@ -2475,18 +2554,22 @@ function openEditor(id){
   };
   $('admSave').onclick = async () => {
     const d = $('admDesc').value.trim().slice(0, 1000);
+    const chosen = $('admCat').value === '__new' ? cleanCat($('admCatNew').value) : $('admCat').value;
+    if ($('admCat').value === '__new' && !chosen) { $('admErr').textContent = 'اكتب اسم القسم الجديد.'; return; }
+    const oldCat = p.c, c = chosen === baseCat(p) ? null : chosen;
     const b = $('admSave'); b.disabled = true; b.textContent = 'جارٍ الحفظ…'; $('admErr').textContent = '';
     try {
       const pid = encodeURIComponent(p.id), base = '/' + encodeURIComponent(code) + '/' + pid;
       let img = e.img || 0;
       if (newImg) { await put('/stores_img_hd' + base, newImg); img = Date.now(); }
       else if (removeImg) { await put('/stores_img_hd' + base, null); img = 0; }
-      const rec = (d || img) ? {d: d || null, img: img || null, by: ADM.name, at: Date.now()} : null;
+      const rec = (d || img || c) ? {d: d || null, img: img || null, c: c || null, by: ADM.name, at: Date.now()} : null;
       await put('/stores_edit' + base, rec);
       if (rec) EDITS[String(p.id)] = rec; else delete EDITS[String(p.id)];
       if (newImg) imgCache[p.id] = newImg; else if (removeImg) delete imgCache[p.id];
       applyEdits(); if (removeImg && !p.i) delete imgCache[p.id];
-      el.classList.remove('on'); render(); showToast('✅ حُفظ التعديل في المتجر');
+      if (p.c !== oldCat) refreshCats();
+      el.classList.remove('on'); render(); showToast(p.c !== oldCat ? '✅ نُقل إلى قسم: ' + (p.c || 'بلا قسم') : '✅ حُفظ التعديل في المتجر');
       if (removeImg) { const ph = document.querySelector(`.ph[data-img="${CSS.escape(String(p.id))}"]`); if (ph) loadImg(ph); }
       openQuickView(p.id);
     } catch(err) { $('admErr').textContent = err.message; } finally { b.disabled = false; b.textContent = '💾 حفظ في المتجر'; }
@@ -2506,6 +2589,10 @@ function openEditor(id){
   .adm-btn2{flex:1;padding:11px;border-radius:12px;border:1px solid var(--primary);background:transparent;color:var(--primary);font:inherit;font-weight:800;cursor:pointer}
   .adm-prev{aspect-ratio:16/11;background:var(--soft);border-radius:14px;display:grid;place-items:center;overflow:hidden;font-size:42px}
   .adm-prev img{width:100%;height:100%;object-fit:contain}
+  .adm-cat{border:1px solid var(--line, rgba(127,127,127,.3));border-radius:12px;padding:8px 10px;margin:8px 0}
+  .adm-cat-h small{color:var(--muted);font-size:12px}
+  .adm-cat .adm-row .adm-in{flex:1;min-width:0}
+  .adm-link{border:0;background:none;color:var(--primary);font:inherit;font-size:12.5px;font-weight:800;padding:2px 0;cursor:pointer}
   #admBanner{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:60;background:#f59e0b;color:#111;font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:flex;gap:8px;align-items:center;max-width:calc(100% - 24px);white-space:nowrap;overflow:hidden}
   #admBanner small{font-weight:600;opacity:.8;overflow:hidden;text-overflow:ellipsis}
   #admBanner button{border:0;background:#111;color:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}`;
